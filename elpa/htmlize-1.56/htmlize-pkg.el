@@ -1,0 +1,2 @@
+;; Generated package description from htmlize.el  -*- no-byte-compile: t -*-
+(define-package "htmlize" "1.56" "Convert buffer text and decorations to HTML." 'nil :commit "7b63aa058c3dd0d9f8c07706cd8bb4e56aaa1fb3" :url "https://elpa.nongnu.org/nongnu/htmlize.html" :authors '(("Hrvoje Niksic" . "hniksic@gmail.com")) :maintainer '("Hrvoje Niksic" . "hniksic@gmail.com") :keywords '("hypermedia" "extensions"))

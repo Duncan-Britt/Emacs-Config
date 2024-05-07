@@ -4,4 +4,4 @@
 ;;                                     '(
 ;;                                       ("\\<\\(val\\|λ\\)\\>" . font-lock-keyword-face)
 ;;                                       ("\\<\\(is\\|in\\)\\>" . font-lock-function-name-face)))))
-
+(add-hook 'lisp-mode-hook 'prettify-symbols-mode)

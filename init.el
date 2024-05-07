@@ -65,7 +65,8 @@ Users of Emacs Prelude are encouraged to keep their personal configuration
 changes in this directory.  All Emacs Lisp files there are loaded automatically
 by Prelude.")
 (defvar prelude-personal-preload-dir (expand-file-name "preload" prelude-personal-dir)
-  "This directory is for your personal configuration, that you want loaded before Prelude.")
+  "This directory is for your personal configuration,
+that you want loaded before Prelude.")
 (defvar prelude-vendor-dir (expand-file-name "vendor" prelude-dir)
   "This directory houses packages that are not yet available in ELPA (or MELPA).")
 (defvar prelude-savefile-dir (expand-file-name "savefile" user-emacs-directory)
@@ -165,6 +166,30 @@ by Prelude.")
 ;; ===============================================================
 ;; My customizations
 
+;; Set font
+;; (set-face-attribute 'default nil :font "Fira Code" )
+(set-face-attribute 'default nil :font "Iosevka")
+;; font size
+(set-face-attribute 'default nil :height 120)
+
+;; enable ligatures in every possible major mode modes
+;; (change 't to 'prog-mode to only enable in programming modes.)
+(ligature-set-ligatures 't '("www" "**" "***" "**/" "*>" "*/" "\\\\" "\\\\\\" "{-" "::"
+                             ":::" ":=" "!!" "!=" "!==" "-}" "----" "-->" "->" "->>"
+                             "-<" "-<<" "-~" "#{" "#[" "##" "###" "####" "#(" "#?" "#_"
+                             "#_(" ".-" ".=" ".." "..<" "..." "?=" "??" ";;" "/*" "/**"
+                             "/=" "/==" "/>" "//" "///" "&&" "||" "||=" "|=" "|>" "^=" "$>"
+                             "++" "+++" "+>" "=:=" "==" "===" "==>" "=>" "=>>" "<="
+                             "=<<" "=/=" ">-" ">=" ">=>" ">>" ">>-" ">>=" ">>>" "<*"
+                             "<*>" "<|" "<|>" "<$" "<$>" "<!--" "<-" "<--" "<->" "<+"
+                             "<+>" "<=" "<==" "<=>" "<=<" "<>" "<<" "<<-" "<<=" "<<<"
+                             "<~" "<~~" "</" "</>" "~@" "~-" "~>" "~~" "~~>" "%%"))
+
+(global-ligature-mode 't)
+
+;; Disable italics
+;; (set-face-italic 'font-lock-comment-face nil)
+
 ;; ef-themes
 (add-to-list 'load-path "~/.emacs.d/manual-packages/ef-themes")
 
@@ -176,8 +201,11 @@ by Prelude.")
 ;; can specify them in `ef-themes-to-toggle' and then invoke the command
 ;; `ef-themes-toggle'.  All the themes are included in the variable
 ;; `ef-themes-collection'.
-(setq ef-themes-to-toggle '(ef-summer ef-winter))
+;; (setq ef-themes-to-toggle '(ef-summer ef-winter))
 
+;; I have done, M-x customize-face and then set variable pitch to Athelas font family
+;; But where am I setting org headings to variable pitch?
+;; Below:
 (setq ef-themes-headings ; read the manual's entry or the doc string
       '((0 variable-pitch light 1.9)
         (1 variable-pitch light 1.8)
@@ -195,7 +223,7 @@ by Prelude.")
 
 ;; Read the doc string or manual for this one.  The symbols can be
 ;; combined in any order.
-(setq ef-themes-region '(intense no-extend neutral))
+;; (setq ef-themes-region '(intense no-extend neutral))
 
 ;; Disable all other themes to avoid awkward blending:
 (mapc #'disable-theme custom-enabled-themes)
@@ -219,30 +247,6 @@ by Prelude.")
 ;; - `ef-themes-preview-colors'
 ;; - `ef-themes-preview-colors-current'
 
-;; Disable italics
-;; (set-face-italic 'font-lock-comment-face nil)
-
-;; Cycle through color themes with C-t
-;; (global-set-key (kbd "C-t")
-;;                 (lambda () (interactive)
-;;                   (cond ((eq (car custom-enabled-themes) 'ef-elea-light)
-;;                          (load-theme 'ef-summer t)
-;;                          (set-face-italic 'font-lock-comment-face nil))
-;;                         ((eq (car custom-enabled-themes) 'ef-summer)
-;;                          (load-theme 'ef-winter t)
-;;                          (set-face-italic 'font-lock-comment-face nil))
-;;                         ((eq (car custom-enabled-themes) 'ef-winter)
-;;                          (load-theme 'ef-cherie t)
-;;                          (set-face-italic 'font-lock-comment-face nil))
-;;                         ((eq (car custom-enabled-themes) 'ef-cherie)
-;;                          (load-theme 'ef-tritanopia-dark t)
-;;                          (set-face-italic 'font-lock-comment-face nil))
-;;                         ((eq (car custom-enabled-themes) 'ef-tritanopia-dark)
-;;                          (load-theme 'ef-elea-light t)
-;;                          (set-face-italic 'font-lock-comment-face nil))
-;;                         (t (load-theme 'ef-elea-light t)
-;;                            (set-face-italic 'font-lock-comment-face nil)))))
-
 ;; Choose theme among themes I like
 (defun lookup (key assoc-list)
   (cdr (assoc key assoc-list)))
@@ -250,16 +254,145 @@ by Prelude.")
 (defun choose-theme ()
   "Open a selection menu in the minibuffer."
   (interactive)
-  (let* ((all-themes '(("Light" . ("ef-arbutus" "ef-melissa-light" "ef-maris-light" "ef-elea-light" "ef-summer"))
-                       ("Dark" . ("ef-dark" "ef-duo-dark" "ef-rosa" "ef-symbiosis" "ef-winter" "ef-cherie" "ef-tritanopia-dark"))))
+  (let* ((all-themes '(("Light" . ("ef-day" "ef-light" "ef-kassio" "ef-frost" "ef-arbutus" "ef-melissa-light" "ef-maris-light" "ef-elea-light" "ef-summer"))
+                       ("Dark" . ("ef-trio-dark" "ef-dark" "ef-duo-dark" "ef-rosa" "ef-symbiosis" "ef-winter" "ef-cherie" "ef-tritanopia-dark"))))
          (options '("Light" "Dark"))
          (brightness-selection (completing-read "Choose category: " options))
          (themes (lookup brightness-selection all-themes))
          (theme-chosen (completing-read "Choose a theme:" themes)))
+    (mapc #'disable-theme custom-enabled-themes)
     (load-theme (intern theme-chosen) t)
     (message "Loaded %s" theme-chosen)))
 
 (global-set-key (kbd "C-t") 'choose-theme)
+
+;; C++ stuff
+(defun read-from-minibuffer-with-validation (prompt valid-p)
+  (require 'cl-lib)
+  (let ((valid? nil)
+        (input nil))
+    (cl-loop until valid?
+          do (progn
+               (setq input (read-from-minibuffer prompt))
+               (setq valid? (funcall valid-p input))))
+    (message input)
+    input))
+
+(defvar *vterm-run-command* nil "Variable to store the vterm command.")
+(defvar *switch-to-vterm?* nil "After C-c ; do you want to switch to vterm?")
+
+(defun set-vterm-command ()
+  (interactive)
+  (require 'cl-lib)
+  (setq *vterm-run-command*
+        (read-from-minibuffer "Enter the vterm command: "
+                              (if *vterm-run-command*
+                                  *vterm-run-command*
+                                "")))
+  (setq *switch-to-vterm?*
+        (cl-case (intern (read-from-minibuffer-with-validation "Switch to vterm after? (y/n): "
+                                                               (lambda (input)
+                                                                 (if (or (string-equal (downcase input) "y")
+                                                                         (string-equal (downcase input) "n"))
+                                                                     t
+                                                                   nil))))
+          (y t)
+          (n nil))))
+(global-set-key (kbd "C-c '") 'set-vterm-command)
+
+(defun invoke-vterm-command ()
+  (interactive)
+  (require 'vterm)
+  (require 'cl-lib)
+  (let ((buf (current-buffer)))
+    (unless (get-buffer vterm-buffer-name)
+      (vterm))
+    (unless *vterm-run-command*
+
+      (setq *vterm-run-command*
+            (read-from-minibuffer "Enter the vterm command: "
+                                  (if *vterm-run-command*
+                                      *vterm-run-command*
+                                    "")))
+      (setq *switch-to-vterm?*
+            (cl-case (intern (read-from-minibuffer-with-validation "Switch to vterm after? (y/n)"
+                                                                   (lambda (input)
+                                                                     (if (or (string-equal (downcase input) "y")
+                                                                             (string-equal (downcase input) "n"))
+                                                                         t
+                                                                       nil))))
+              (y t)
+              (n nil))))
+    (display-buffer vterm-buffer-name t)
+    (switch-to-buffer-other-window vterm-buffer-name)
+    (vterm--goto-line -1)
+    (vterm-send-string *vterm-run-command*)
+    (vterm-send-return)
+    (when (not *switch-to-vterm?*) (switch-to-buffer-other-window buf))))
+
+(global-set-key (kbd "C-c x") 'invoke-vterm-command)
+
+(add-hook 'octave-mode-hook
+          (lambda ()
+            (define-key octave-mode-map (kbd "C-c C-c") 'octave-send-defun)))
+
+(add-hook 'c-mode-hook
+          (lambda ()
+            (define-key c-mode-map (kbd "C-c c") 'recompile)))
+
+(add-hook 'c++-mode-hook
+          (lambda ()
+            (define-key c++-mode-map (kbd "C-c c") 'recompile)
+            (let ((vterm-run-command nil)
+                  (switch-to-vterm? nil))
+              (define-key c++-mode-map (kbd "C-c '")
+                          (lambda ()
+                            (interactive)
+                            (require 'cl-lib)
+                            (setq vterm-run-command
+                                  (read-from-minibuffer "Enter the vterm command: "
+                                                        (if vterm-run-command
+                                                            vterm-run-command
+                                                          "")))
+                            (setq switch-to-vterm?
+                                  (cl-case (intern (read-from-minibuffer-with-validation "Switch to vterm after? (y/n): "
+                                                                                         (lambda (input)
+                                                                                           (if (or (string-equal (downcase input) "y")
+                                                                                                   (string-equal (downcase input) "n"))
+                                                                                               t
+                                                                                             nil))))
+                                         (y t)
+                                         (n nil)))))
+              (define-key c++-mode-map (kbd "C-c ;")
+                          (lambda ()
+                            (interactive)
+                            (require 'vterm)
+                            (require 'cl-lib)
+                            (let ((buf (current-buffer)))
+                              (unless (get-buffer vterm-buffer-name)
+                                (vterm))
+                              (unless vterm-run-command
+
+                                (setq vterm-run-command
+                                      (read-from-minibuffer "Enter the vterm command: "
+                                                            (if vterm-run-command
+                                                                vterm-run-command
+                                                              "")))
+                                (setq switch-to-vterm?
+                                      (cl-case (intern (read-from-minibuffer-with-validation "Switch to vterm after? (y/n)"
+                                                                                             (lambda (input)
+                                                                                               (if (or (string-equal (downcase input) "y")
+                                                                                                       (string-equal (downcase input) "n"))
+                                                                                                   t
+                                                                                                 nil))))
+                                            (y t)
+                                            (n nil))))
+                              (display-buffer vterm-buffer-name t)
+                              (switch-to-buffer-other-window vterm-buffer-name)
+                              (vterm--goto-line -1)
+                              (vterm-send-string vterm-run-command)
+                              (vterm-send-return)
+                              (when (not switch-to-vterm?) (switch-to-buffer-other-window buf))))))))
 
 ;; disable the feature where prelude disables syntax highlighting after certain line length.
 (setq prelude-whitespace nil)
@@ -267,33 +400,23 @@ by Prelude.")
 ;; Truncate lines by default
 (setq-default truncate-lines t)
 
-;; Set font
-;; (set-face-attribute 'default nil :font "Fira Code" )
-(set-face-attribute 'default nil :font "Iosevka")
-;; font size
-(set-face-attribute 'default nil :height 140)
-
-;; enable ligatures in every possible major mode modes
-;; (change 't to 'prog-mode to only enable in programming modes.)
-(ligature-set-ligatures 't '("www" "**" "***" "**/" "*>" "*/" "\\\\" "\\\\\\" "{-" "::"
-                             ":::" ":=" "!!" "!=" "!==" "-}" "----" "-->" "->" "->>"
-                             "-<" "-<<" "-~" "#{" "#[" "##" "###" "####" "#(" "#?" "#_"
-                             "#_(" ".-" ".=" ".." "..<" "..." "?=" "??" ";;" "/*" "/**"
-                             "/=" "/==" "/>" "//" "///" "&&" "||" "||=" "|=" "|>" "^=" "$>"
-                             "++" "+++" "+>" "=:=" "==" "===" "==>" "=>" "=>>" "<="
-                             "=<<" "=/=" ">-" ">=" ">=>" ">>" ">>-" ">>=" ">>>" "<*"
-                             "<*>" "<|" "<|>" "<$" "<$>" "<!--" "<-" "<--" "<->" "<+"
-                             "<+>" "<=" "<==" "<=>" "<=<" "<>" "<<" "<<-" "<<=" "<<<"
-                             "<~" "<~~" "</" "</>" "~@" "~-" "~>" "~~" "~~>" "%%"))
-
-(global-ligature-mode 't)
-
 ;; c-n adds newlines
 (setq next-line-add-newlines t)
 
+;; Org AI
+;; I can't use this because I can't use gpg.
+;; I can't use gpg because the new version is incompatible with emacs 29.1
+;; There's a fix, but it requires me to update xcode and I can't because I'm still on mac monterrey
+;; (use-package org-ai
+;;   :ensure
+;;   :commands (org-ai-mode org-ai-global-mode)
+;;   :init
+;;   (add-hook 'org-mode-hook #'org-ai-mode)
+;;   (org-ai-global-mode))
+
 ;; function to make insert greek letters after typing their name.
 ;; also includes other symbols besides greek letters like infinity and setmemership (in).
-;; bound to c-x c-g below. 
+;; bound to c-x c-g below.
 (defun to-greek ()
   "convert word at point to greek letter."
   (interactive)
@@ -305,7 +428,7 @@ by Prelude.")
       ;;  "word begins at [%s], end at [%s], word is [%s]"
       ;;  pos1 pos2 word)
       (delete-region pos1 pos2)
-      (insert 
+      (insert
        (pcase word
 	 ("lambda" "λ")
 	 ("omega" "ω")
@@ -340,52 +463,32 @@ by Prelude.")
 
 ;; (add-hook 'org-mode-hook 'my-org-custom-keybindings)
 
-
-;; ORG AGENDA
-(setq org-agenda-files (list "~/Dropbox/agenda.org"))
-
-;; org src blocks
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '(
-   (emacs-lisp . t)
-   (python . t)
-   (ruby . t)
-   (js . t)
-   (C . t)   
-   (octave . t)
-   (latex . t)
-   (lisp . t)
-   (dot . t)
-   (matlab . t)   
-   ))
-
-(setq org-babel-python-command "python3")
-
-(use-package org-bullets
-  :ensure t
-  :config
-  (add-hook 'org-mode-hook (lambda ()
-                             (org-bullets-mode 1)
-                             (org-indent-mode 1))))
-;; Enable visual line mode for org buffers.
-(add-hook 'org-mode-hook 'visual-line-mode)
-
-;; Hide /emphasis/ markers in org mode
-(setq org-hide-emphasis-markers t)
-
-;; take notes when clocking out
-(setq org-log-note-clock-out t)
-
 ;; setup yasnippet
 (setq yas-snippet-dirs '("~/Dropbox/yasnippets"))
 (yas-global-mode 1)
+
+(use-package annotate
+  :ensure t
+  ;; :config
+  ;; Here you can place any configuration code for annotate.el
+  ;; For example, to set a custom annotation file, you could use:
+  ;; (setq annotate-file "~/.emacs.d/annotations")
+  )
+
+
+;; Common Lisp
+(add-to-list 'load-path "~/.emacs.d/personal/common-lisp.el")
+(add-to-list 'load-path "~/.emacs.d/personal/lass.el")
 
 ;; SLIME
 ;; Common Lisp
 (load (expand-file-name "~/.quicklisp/slime-helper.el"))
 ;; replace "sbcl" with the path to your implementation
-(setq inferior-lisp-program "sbcl")
+;; (setq inferior-lisp-program "sbcl --dynamics-space-size 2048")
+(setq slime-lisp-implementations '((sbcl ("sbcl" "--dynamic-space-size" "4000"))
+                                   (ccl64 ("/usr/local/bin/ccl64"))))
+(setq slime-default-lisp 'sbcl)
+
 
 ;; Org Mode Customizations
 (add-to-list 'load-path (expand-file-name "~/.emacs.d/personal/org-customizations.el"))
@@ -408,33 +511,7 @@ by Prelude.")
   (require 'edraw-org)
   (edraw-org-setup-exporter))
 
-;; ;; Janet inferior lisp mode
-;; (add-to-list 'load-path "~/.emacs.d/manual-packages/inf-janet")
-
-;; (require 'inf-janet)
-
-;; (setq inf-janet-program "~/janet/build/janet")
-;; ;; or
-;; ;; (setq inf-janet-program '("localhost" . 5555))
-
-;; (add-hook 'janet-mode-hook #'inf-janet-minor-mode)
-
-;; ijanet mode
-(add-to-list 'load-path "~/.emacs.d/manual-packages/ijanet-mode")
-;; uncomment and eval c-x c-e to enable ijanet mode.
-;; for unknown reasons this doesn't work on startup.
-;; (require 'ijanet)
-
-(add-hook 'janet-mode-hook #'rainbow-delimiters-mode-enable)
-
 ;; MAKE C-s search case-insensitive:
 ;; (setq case-fold-search t)
 
 ;;; init.el ends here
-
-
-
-
-
-
-
