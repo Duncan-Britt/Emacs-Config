@@ -164,6 +164,7 @@ that you want loaded before Prelude.")
  (run-at-time 5 nil 'prelude-tip-of-the-day))
 
 ;; ===============================================================
+;; brew install emacs-plus@29 --with-native-comp --with-xwidgets --with-imagemagick --with-modern-black-variant-icon
 ;; My customizations
 
 ;; Set font
@@ -482,7 +483,8 @@ that you want loaded before Prelude.")
 
 ;; SLIME
 ;; Common Lisp
-(load (expand-file-name "~/.quicklisp/slime-helper.el"))
+(setq inferior-lisp-program (executable-find "sbcl"))
+(load (expand-file-name "~/quicklisp/slime-helper.el"))
 ;; replace "sbcl" with the path to your implementation
 ;; (setq inferior-lisp-program "sbcl --dynamics-space-size 2048")
 (setq slime-lisp-implementations '((sbcl ("sbcl" "--dynamic-space-size" "4000"))
