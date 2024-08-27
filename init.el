@@ -164,13 +164,22 @@ that you want loaded before Prelude.")
  (run-at-time 5 nil 'prelude-tip-of-the-day))
 
 ;; ===============================================================
+;; brew install emacs-plus@29 --with-native-comp --with-xwidgets --with-imagemagick --with-modern-black-variant-icon
+;; brew install emacs-plus@29 --with-xwidgets --with-imagemagick --with-modern-black-variant-icon
 ;; My customizations
 
 ;; Set font
-;; (set-face-attribute 'default nil :font "Fira Code" )
 (set-face-attribute 'default nil :font "Iosevka")
 ;; font size
 (set-face-attribute 'default nil :height 120)
+
+;; Initial Frame Size
+(setq initial-frame-alist
+      (append initial-frame-alist
+              '((left   . 20)
+                (top    . 0)
+                (width  . 240)
+                (height . 60))))
 
 ;; enable ligatures in every possible major mode modes
 ;; (change 't to 'prog-mode to only enable in programming modes.)
@@ -203,19 +212,27 @@ that you want loaded before Prelude.")
 ;; `ef-themes-collection'.
 ;; (setq ef-themes-to-toggle '(ef-summer ef-winter))
 
-;; I have done, M-x customize-face and then set variable pitch to Athelas font family
-;; But where am I setting org headings to variable pitch?
-;; Below:
-(setq ef-themes-headings ; read the manual's entry or the doc string
-      '((0 variable-pitch light 1.9)
-        (1 variable-pitch light 1.8)
-        (2 variable-pitch regular 1.7)
-        (3 variable-pitch regular 1.6)
-        (4 variable-pitch regular 1.5)
-        (5 variable-pitch 1.4) ; absence of weight means `bold'
-        (6 variable-pitch 1.3)
-        (7 variable-pitch 1.2)
-        (t variable-pitch 1.1)))
+(setq ef-themes-headings
+      '((0 . (variable-pitch light 1.9))
+        (1 . (variable-pitch light 1.8))
+        (2 . (variable-pitch regular 1.7))
+        (3 . (variable-pitch regular 1.6))
+        (4 . (variable-pitch regular 1.5))
+        (5 . (variable-pitch 1.4)) ; absence of weight means `bold'
+        (6 . (variable-pitch 1.3))
+        (7 . (variable-pitch 1.2))
+        (t . (variable-pitch 1.1))))
+
+;; (setq ef-themes-headings ; read the manual's entry or the doc string
+;;       '((0 variable-pitch light 1.9)
+;;         (1 variable-pitch light 1.8)
+;;         (2 variable-pitch regular 1.7)
+;;         (3 variable-pitch regular 1.6)
+;;         (4 variable-pitch regular 1.5)
+;;         (5 variable-pitch 1.4) ; absence of weight means `bold'
+;;         (6 variable-pitch 1.3)
+;;         (7 variable-pitch 1.2)
+;;         (t variable-pitch 1.1)))
 
 ;; They are nil by default...
 (setq ef-themes-mixed-fonts nil
@@ -464,16 +481,18 @@ that you want loaded before Prelude.")
 ;; (add-hook 'org-mode-hook 'my-org-custom-keybindings)
 
 ;; setup yasnippet
+(add-to-list 'load-path "~/.emacs.d/elpa/yasnippet-20200604.246")
+(require 'yasnippet)
 (setq yas-snippet-dirs '("~/Dropbox/yasnippets"))
 (yas-global-mode 1)
 
-(use-package annotate
-  :ensure t
-  ;; :config
-  ;; Here you can place any configuration code for annotate.el
-  ;; For example, to set a custom annotation file, you could use:
-  ;; (setq annotate-file "~/.emacs.d/annotations")
-  )
+;; (use-package annotate
+;;   :ensure t
+;;   ;; :config
+;;   ;; Here you can place any configuration code for annotate.el
+;;   ;; For example, to set a custom annotation file, you could use:
+;;   ;; (setq annotate-file "~/.emacs.d/annotations")
+;;   )
 
 
 ;; Common Lisp
@@ -482,7 +501,8 @@ that you want loaded before Prelude.")
 
 ;; SLIME
 ;; Common Lisp
-(load (expand-file-name "~/.quicklisp/slime-helper.el"))
+(setq inferior-lisp-program (executable-find "sbcl"))
+(load (expand-file-name "~/quicklisp/slime-helper.el"))
 ;; replace "sbcl" with the path to your implementation
 ;; (setq inferior-lisp-program "sbcl --dynamics-space-size 2048")
 (setq slime-lisp-implementations '((sbcl ("sbcl" "--dynamic-space-size" "4000"))
@@ -493,6 +513,8 @@ that you want loaded before Prelude.")
 ;; Org Mode Customizations
 (add-to-list 'load-path (expand-file-name "~/.emacs.d/personal/org-customizations.el"))
 (autoload 'org-customizations "org-customizations")
+;;;; Olvetti Mode
+(add-to-list 'load-path "~/.emacs.d/personal/olivetti-2.0.5")
 
 ;; Emacs Easy Draw
 (add-to-list 'load-path (expand-file-name "~/.emacs.d/personal/el-easydraw/"))
@@ -511,7 +533,70 @@ that you want loaded before Prelude.")
   (require 'edraw-org)
   (edraw-org-setup-exporter))
 
+(add-to-list 'load-path (expand-file-name "~/.emacs.d/personal/update-table/"))
+(load (expand-file-name "~/.emacs.d/personal/update-table/update-table.el"))
+
 ;; MAKE C-s search case-insensitive:
 ;; (setq case-fold-search t)
 
+;; ORG-AI
+(use-package org-ai
+  :ensure
+  :commands (org-ai-mode org-ai-global-mode)
+  :init
+  (add-hook 'org-mode-hook #'org-ai-mode)
+  (org-ai-global-mode))
+
+
+(use-package breadcrumb
+  :ensure t)
+
+;; Spell Check Dictionary
+(setq ispell-personal-dictionary "~/.emacs.d/personal/my-personal-ispell-dictionary")
+
+;; Elixir
+(use-package inf-elixir
+  :bind (("C-c c i" . 'inf-elixir)
+         ("C-c c p" . 'inf-elixir-project)
+         ("C-c c l" . 'inf-elixir-send-line)
+         ("C-c c r" . 'inf-elixir-send-region)
+         ("C-c c b" . 'inf-elixir-send-buffer)
+         ("C-c c R" . 'inf-elixir-reload-module))
+  :ensure t)
+
+;;;; REPL management
+;; (defun elixir-inf-switch ()
+;;   "switch to inf elixir window"
+;;   (interactive)
+;;   (let ((bufs (mapcar #'buffer-name (buffer-list))))
+;;     (elixir-inf-helper bufs)))
+
+;; (defun elixir-inf-helper (lis)
+;;   "find terminal and wtich to term buffer"
+;;   (cond
+;;    ((eq '() lis)
+;;     (inf-elixir-set-repl))
+;;    ((string= (car lis) "Inf-Elixir")
+;;     (switch-to-buffer-other-window (car lis)))
+;;    (t
+;;     (elixir-inf-helper (cdr lis)))))
+
+;; (define-key inf-elixir-mode-map (kbd "C-c C-z") 'previous-multiframe-window)
+;; (define-key elixir-mode-map (kbd "C-<return>") 'inf-elixir-send-line)
+;; (define-key elixir-mode-map (kbd "C-c C-c") 'inf-elixir-send-buffer)
+;; (define-key elixir-mode-map (kbd "C-c C-z") 'elixir-inf-switch)
+
+;; Calendar customization
+(defun calendar-insert-date ()
+  "Capture the date at point, exit the Calendar, insert the date."
+  (interactive)
+  (seq-let (month day year) (save-match-data (calendar-cursor-to-date))
+    (calendar-exit)
+    (insert (format "<%d-%02d-%02d>" year month day))))
+
+(define-key calendar-mode-map (kbd "RET") 'calendar-insert-date)
+
 ;;; init.el ends here
+
+
+
