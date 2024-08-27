@@ -75,6 +75,16 @@
       '("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
         "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
 
+;; Disable line numbers in org mode
+(add-hook 'org-mode-hook
+          (lambda ()
+            (message "ran fn")
+            (display-line-numbers-mode 0)))
+
+(use-package olivetti
+  :custom (olivetti-body-width 100)
+  :hook (org-mode . olivetti-mode))
+
 ;; (use-package org-ai
 ;;   :ensure t
 ;;   :commands (org-ai-mode
