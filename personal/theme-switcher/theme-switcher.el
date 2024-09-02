@@ -57,18 +57,24 @@
          (brightness-selection (completing-read "Choose category: " options))         
          (themes (lookup brightness-selection all-themes))
          (theme-chosen (completing-read "Choose a theme:" themes)))
-    (setq *themes-category* (intern brightness-selection))
-    (print "themes category: ")
-    (print *themes-category*)
+    (setq *themes-category* (intern brightness-selection))    
     (mapc #'disable-theme custom-enabled-themes)
     (load-theme (intern theme-chosen) t)
+    (ts-refresh-inline-images)
     (message "Loaded %s" theme-chosen)))
 
 (global-set-key (kbd "C-t") 'choose-theme)
 
-(defun ts-init ()  
+(defun ts-init ()
   (define-key org-mode-map (kbd "C-c C-x C-v") nil)  
   (define-key org-mode-map (kbd "C-c C-x C-v") 'ts-toggle-inline-images))
+
+(defun ts-refresh-inline-images ()
+  "If displaying inline images, stop and restart display."
+  (when (org--inline-image-overlays)
+    (org-remove-inline-images)
+    (message "hello")
+    (ts-display-inline-images)))
 
 (defun ts-toggle-inline-images (&optional include-linked beg end)
   "Toggle the display of inline images,
@@ -214,6 +220,3 @@ buffer boundaries with possible narrowing."
 
 (provide 'theme-switcher)
 ;;; theme-switcher.el ends here
-
-
-
