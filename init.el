@@ -200,7 +200,7 @@ that you want loaded before Prelude.")
 ;; (set-face-italic 'font-lock-comment-face nil)
 
 ;; ef-themes
-(add-to-list 'load-path "~/.emacs.d/manual-packages/ef-themes")
+;; (add-to-list 'load-path "~/.emacs.d/manual-packages/ef-themes")
 
 ;; Make customisations that affect Emacs faces BEFORE loading a theme
 ;; (any change needs a theme re-load to take effect).
@@ -222,17 +222,6 @@ that you want loaded before Prelude.")
         (6 . (variable-pitch 1.3))
         (7 . (variable-pitch 1.2))
         (t . (variable-pitch 1.1))))
-
-;; (setq ef-themes-headings ; read the manual's entry or the doc string
-;;       '((0 variable-pitch light 1.9)
-;;         (1 variable-pitch light 1.8)
-;;         (2 variable-pitch regular 1.7)
-;;         (3 variable-pitch regular 1.6)
-;;         (4 variable-pitch regular 1.5)
-;;         (5 variable-pitch 1.4) ; absence of weight means `bold'
-;;         (6 variable-pitch 1.3)
-;;         (7 variable-pitch 1.2)
-;;         (t variable-pitch 1.1)))
 
 ;; They are nil by default...
 (setq ef-themes-mixed-fonts nil
@@ -263,25 +252,6 @@ that you want loaded before Prelude.")
 ;; - `ef-themes-load-random'
 ;; - `ef-themes-preview-colors'
 ;; - `ef-themes-preview-colors-current'
-
-;; Choose theme among themes I like
-(defun lookup (key assoc-list)
-  (cdr (assoc key assoc-list)))
-
-(defun choose-theme ()
-  "Open a selection menu in the minibuffer."
-  (interactive)
-  (let* ((all-themes '(("Light" . ("ef-day" "ef-light" "ef-kassio" "ef-frost" "ef-arbutus" "ef-melissa-light" "ef-maris-light" "ef-elea-light" "ef-summer"))
-                       ("Dark" . ("ef-trio-dark" "ef-dark" "ef-duo-dark" "ef-rosa" "ef-symbiosis" "ef-winter" "ef-cherie" "ef-tritanopia-dark"))))
-         (options '("Light" "Dark"))
-         (brightness-selection (completing-read "Choose category: " options))
-         (themes (lookup brightness-selection all-themes))
-         (theme-chosen (completing-read "Choose a theme:" themes)))
-    (mapc #'disable-theme custom-enabled-themes)
-    (load-theme (intern theme-chosen) t)
-    (message "Loaded %s" theme-chosen)))
-
-(global-set-key (kbd "C-t") 'choose-theme)
 
 ;; C++ stuff
 (defun read-from-minibuffer-with-validation (prompt valid-p)
@@ -360,56 +330,57 @@ that you want loaded before Prelude.")
 (add-hook 'c++-mode-hook
           (lambda ()
             (define-key c++-mode-map (kbd "C-c c") 'recompile)
-            (let ((vterm-run-command nil)
-                  (switch-to-vterm? nil))
-              (define-key c++-mode-map (kbd "C-c '")
-                          (lambda ()
-                            (interactive)
-                            (require 'cl-lib)
-                            (setq vterm-run-command
-                                  (read-from-minibuffer "Enter the vterm command: "
-                                                        (if vterm-run-command
-                                                            vterm-run-command
-                                                          "")))
-                            (setq switch-to-vterm?
-                                  (cl-case (intern (read-from-minibuffer-with-validation "Switch to vterm after? (y/n): "
-                                                                                         (lambda (input)
-                                                                                           (if (or (string-equal (downcase input) "y")
-                                                                                                   (string-equal (downcase input) "n"))
-                                                                                               t
-                                                                                             nil))))
-                                         (y t)
-                                         (n nil)))))
-              (define-key c++-mode-map (kbd "C-c ;")
-                          (lambda ()
-                            (interactive)
-                            (require 'vterm)
-                            (require 'cl-lib)
-                            (let ((buf (current-buffer)))
-                              (unless (get-buffer vterm-buffer-name)
-                                (vterm))
-                              (unless vterm-run-command
+            ;; (let ((vterm-run-command nil)
+            ;;       (switch-to-vterm? nil))
+            ;;   (define-key c++-mode-map (kbd "C-c '")
+            ;;               (lambda ()
+            ;;                 (interactive)
+            ;;                 (require 'cl-lib)
+            ;;                 (setq vterm-run-command
+            ;;                       (read-from-minibuffer "Enter the vterm command: "
+            ;;                                             (if vterm-run-command
+            ;;                                                 vterm-run-command
+            ;;                                               "")))
+            ;;                 (setq switch-to-vterm?
+            ;;                       (cl-case (intern (read-from-minibuffer-with-validation "Switch to vterm after? (y/n): "
+            ;;                                                                              (lambda (input)
+            ;;                                                                                (if (or (string-equal (downcase input) "y")
+            ;;                                                                                        (string-equal (downcase input) "n"))
+            ;;                                                                                    t
+            ;;                                                                                  nil))))
+            ;;                              (y t)
+            ;;                              (n nil)))))
+            ;;   (define-key c++-mode-map (kbd "C-c ;")
+            ;;               (lambda ()
+            ;;                 (interactive)
+            ;;                 (require 'vterm)
+            ;;                 (require 'cl-lib)
+            ;;                 (let ((buf (current-buffer)))
+            ;;                   (unless (get-buffer vterm-buffer-name)
+            ;;                     (vterm))
+            ;;                   (unless vterm-run-command
 
-                                (setq vterm-run-command
-                                      (read-from-minibuffer "Enter the vterm command: "
-                                                            (if vterm-run-command
-                                                                vterm-run-command
-                                                              "")))
-                                (setq switch-to-vterm?
-                                      (cl-case (intern (read-from-minibuffer-with-validation "Switch to vterm after? (y/n)"
-                                                                                             (lambda (input)
-                                                                                               (if (or (string-equal (downcase input) "y")
-                                                                                                       (string-equal (downcase input) "n"))
-                                                                                                   t
-                                                                                                 nil))))
-                                            (y t)
-                                            (n nil))))
-                              (display-buffer vterm-buffer-name t)
-                              (switch-to-buffer-other-window vterm-buffer-name)
-                              (vterm--goto-line -1)
-                              (vterm-send-string vterm-run-command)
-                              (vterm-send-return)
-                              (when (not switch-to-vterm?) (switch-to-buffer-other-window buf))))))))
+            ;;                     (setq vterm-run-command
+            ;;                           (read-from-minibuffer "Enter the vterm command: "
+            ;;                                                 (if vterm-run-command
+            ;;                                                     vterm-run-command
+            ;;                                                   "")))
+            ;;                     (setq switch-to-vterm?
+            ;;                           (cl-case (intern (read-from-minibuffer-with-validation "Switch to vterm after? (y/n)"
+            ;;                                                                                  (lambda (input)
+            ;;                                                                                    (if (or (string-equal (downcase input) "y")
+            ;;                                                                                            (string-equal (downcase input) "n"))
+            ;;                                                                                        t
+            ;;                                                                                      nil))))
+            ;;                                 (y t)
+            ;;                                 (n nil))))
+            ;;                   (display-buffer vterm-buffer-name t)
+            ;;                   (switch-to-buffer-other-window vterm-buffer-name)
+            ;;                   (vterm--goto-line -1)
+            ;;                   (vterm-send-string vterm-run-command)
+            ;;                   (vterm-send-return)
+            ;;                   (when (not switch-to-vterm?) (switch-to-buffer-other-window buf))))))
+            ))
 
 ;; disable the feature where prelude disables syntax highlighting after certain line length.
 (setq prelude-whitespace nil)
@@ -596,6 +567,11 @@ that you want loaded before Prelude.")
 
 (define-key calendar-mode-map (kbd "RET") 'calendar-insert-date)
 
+;; Theme toggler with image swap
+(add-to-list 'load-path "~/.emacs.d/personal/theme-switcher/")
+(with-eval-after-load 'org
+  (require 'theme-switcher)
+  (ts-init))
 ;;; init.el ends here
 
 

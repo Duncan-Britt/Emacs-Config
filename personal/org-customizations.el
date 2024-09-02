@@ -1,5 +1,5 @@
 ;; ORG AGENDA
-(setq org-agenda-files (list "~/Dropbox/agenda.org"))
+(setq org-agenda-files (list "~/Dropbox/agenda/agenda.org"))
 
 
 (setq org-plantuml-jar-path (expand-file-name "~/plantuml-1.2024.4.jar"))
