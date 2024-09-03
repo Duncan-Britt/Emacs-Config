@@ -488,21 +488,21 @@ that you want loaded before Prelude.")
 (add-to-list 'load-path "~/.emacs.d/personal/olivetti-2.0.5")
 
 ;; Emacs Easy Draw
-(add-to-list 'load-path (expand-file-name "~/.emacs.d/personal/el-easydraw/"))
-(autoload 'edraw-mode "edraw-mode")
-(add-to-list 'auto-mode-alist '("\\.edraw\\.svg$" . edraw-mode))
-(autoload 'edraw "edraw-mode" nil t)
+;; (add-to-list 'load-path (expand-file-name "~/.emacs.d/personal/el-easydraw/"))
+;; (autoload 'edraw-mode "edraw-mode")
+;; (add-to-list 'auto-mode-alist '("\\.edraw\\.svg$" . edraw-mode))
+;; (autoload 'edraw "edraw-mode" nil t)
 
-(with-eval-after-load 'org
-  (require 'edraw-org)
-  (edraw-org-setup-default))
+;; (with-eval-after-load 'org
+;;   (require 'edraw-org)
+;;   (edraw-org-setup-default))
 ;; When using the org-export-in-background option (when using the
 ;; asynchronous export function), the following settings are
 ;; required. This is because Emacs started in a separate process does
 ;; not load org.el but only ox.el.
-(with-eval-after-load "ox"
-  (require 'edraw-org)
-  (edraw-org-setup-exporter))
+;; (with-eval-after-load "ox"
+;;   (require 'edraw-org)
+;;   (edraw-org-setup-exporter))
 
 (add-to-list 'load-path (expand-file-name "~/.emacs.d/personal/update-table/"))
 (load (expand-file-name "~/.emacs.d/personal/update-table/update-table.el"))
