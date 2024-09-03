@@ -568,11 +568,8 @@ that you want loaded before Prelude.")
 (define-key calendar-mode-map (kbd "RET") 'calendar-insert-date)
 
 ;; Theme toggler with image swap
-(add-to-list 'load-path "~/.emacs.d/personal/theme-switcher/")
+(add-to-list 'load-path "~/code/theme-switcher/")
 (with-eval-after-load 'org
   (require 'theme-switcher)
   (ts-init))
 ;;; init.el ends here
-
-
-
