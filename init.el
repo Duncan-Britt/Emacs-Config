@@ -235,7 +235,7 @@ that you want loaded before Prelude.")
 (mapc #'disable-theme custom-enabled-themes)
 
 ;; Load the theme of choice:
-(load-theme 'ef-winter :no-confirm)
+(load-theme 'ef-dream :no-confirm)
 
 ;; OR use this to load the theme which also calls `ef-themes-post-load-hook':
 ;; (ef-themes-select 'ef-winter)
@@ -285,7 +285,6 @@ that you want loaded before Prelude.")
                                                                    nil))))
           (y t)
           (n nil))))
-(global-set-key (kbd "C-c '") 'set-vterm-command)
 
 (defun invoke-vterm-command ()
   (interactive)
@@ -317,70 +316,21 @@ that you want loaded before Prelude.")
     (vterm-send-return)
     (when (not *switch-to-vterm?*) (switch-to-buffer-other-window buf))))
 
-(global-set-key (kbd "C-c x") 'invoke-vterm-command)
-
 (add-hook 'octave-mode-hook
           (lambda ()
             (define-key octave-mode-map (kbd "C-c C-c") 'octave-send-defun)))
 
 (add-hook 'c-mode-hook
           (lambda ()
-            (define-key c-mode-map (kbd "C-c c") 'recompile)))
+            (define-key c-mode-map (kbd "C-c c") 'recompile)
+            (define-key c-mode-map (kbd "C-c x") 'invoke-vterm-command)
+            (define-key c-mode-map (kbd "C-c '") 'set-vterm-command)))
 
 (add-hook 'c++-mode-hook
           (lambda ()
             (define-key c++-mode-map (kbd "C-c c") 'recompile)
-            ;; (let ((vterm-run-command nil)
-            ;;       (switch-to-vterm? nil))
-            ;;   (define-key c++-mode-map (kbd "C-c '")
-            ;;               (lambda ()
-            ;;                 (interactive)
-            ;;                 (require 'cl-lib)
-            ;;                 (setq vterm-run-command
-            ;;                       (read-from-minibuffer "Enter the vterm command: "
-            ;;                                             (if vterm-run-command
-            ;;                                                 vterm-run-command
-            ;;                                               "")))
-            ;;                 (setq switch-to-vterm?
-            ;;                       (cl-case (intern (read-from-minibuffer-with-validation "Switch to vterm after? (y/n): "
-            ;;                                                                              (lambda (input)
-            ;;                                                                                (if (or (string-equal (downcase input) "y")
-            ;;                                                                                        (string-equal (downcase input) "n"))
-            ;;                                                                                    t
-            ;;                                                                                  nil))))
-            ;;                              (y t)
-            ;;                              (n nil)))))
-            ;;   (define-key c++-mode-map (kbd "C-c ;")
-            ;;               (lambda ()
-            ;;                 (interactive)
-            ;;                 (require 'vterm)
-            ;;                 (require 'cl-lib)
-            ;;                 (let ((buf (current-buffer)))
-            ;;                   (unless (get-buffer vterm-buffer-name)
-            ;;                     (vterm))
-            ;;                   (unless vterm-run-command
-
-            ;;                     (setq vterm-run-command
-            ;;                           (read-from-minibuffer "Enter the vterm command: "
-            ;;                                                 (if vterm-run-command
-            ;;                                                     vterm-run-command
-            ;;                                                   "")))
-            ;;                     (setq switch-to-vterm?
-            ;;                           (cl-case (intern (read-from-minibuffer-with-validation "Switch to vterm after? (y/n)"
-            ;;                                                                                  (lambda (input)
-            ;;                                                                                    (if (or (string-equal (downcase input) "y")
-            ;;                                                                                            (string-equal (downcase input) "n"))
-            ;;                                                                                        t
-            ;;                                                                                      nil))))
-            ;;                                 (y t)
-            ;;                                 (n nil))))
-            ;;                   (display-buffer vterm-buffer-name t)
-            ;;                   (switch-to-buffer-other-window vterm-buffer-name)
-            ;;                   (vterm--goto-line -1)
-            ;;                   (vterm-send-string vterm-run-command)
-            ;;                   (vterm-send-return)
-            ;;                   (when (not switch-to-vterm?) (switch-to-buffer-other-window buf))))))
-            ))
+            (define-key c++mode-map (kbd "C-c x") 'invoke-vterm-command)
+            (define-key c++mode-map (kbd "C-c '") 'set-vterm-command)))
 
 ;; disable the feature where prelude disables syntax highlighting after certain line length.
 (setq prelude-whitespace nil)
@@ -390,17 +340,6 @@ that you want loaded before Prelude.")
 
 ;; c-n adds newlines
 (setq next-line-add-newlines t)
-
-;; Org AI
-;; I can't use this because I can't use gpg.
-;; I can't use gpg because the new version is incompatible with emacs 29.1
-;; There's a fix, but it requires me to update xcode and I can't because I'm still on mac monterrey
-;; (use-package org-ai
-;;   :ensure
-;;   :commands (org-ai-mode org-ai-global-mode)
-;;   :init
-;;   (add-hook 'org-mode-hook #'org-ai-mode)
-;;   (org-ai-global-mode))
 
 ;; function to make insert greek letters after typing their name.
 ;; also includes other symbols besides greek letters like infinity and setmemership (in).
@@ -441,15 +380,6 @@ that you want loaded before Prelude.")
 ;; Merriam Webster Thesaurus keybinding
 (eval-after-load 'org
   '(define-key org-mode-map (kbd "C-c t") 'mw-thesaurus-lookup-dwim))
-
-
-;; (defun my-org-custom-keybindings ()
-;;   "My custom keybindings for Org mode."
-;;   (local-set-key (kbd "C-c ") 'org-insert-my-custom-element)
-;;   ;; Add more keybindings as needed
-;;   )
-
-;; (add-hook 'org-mode-hook 'my-org-custom-keybindings)
 
 ;; setup yasnippet
 (add-to-list 'load-path "~/.emacs.d/elpa/yasnippet-20200604.246")
@@ -510,14 +440,20 @@ that you want loaded before Prelude.")
 ;; MAKE C-s search case-insensitive:
 ;; (setq case-fold-search t)
 
+(load "~/.safe/safe.el")
+
 ;; ORG-AI
 (use-package org-ai
   :ensure
   :commands (org-ai-mode org-ai-global-mode)
   :init
-  (add-hook 'org-mode-hook #'org-ai-mode)
-  (org-ai-global-mode))
-
+  (add-hook 'org-mode-hook #'org-ai-mode) ; enable org-ai in org-mode
+  (org-ai-global-mode) ; installs global keybindings on C-c M-a
+  :config
+  (setq org-ai-openai-api-token *api-token*)
+  ;; (setq org-ai-default-chat-model "gpt-4")
+  ;; (org-ai-install-yasnippets)
+  )
 
 (use-package breadcrumb
   :ensure t)
@@ -572,4 +508,8 @@ that you want loaded before Prelude.")
 (with-eval-after-load 'org
   (require 'theme-switcher)
   (ts-init))
+
+;; Scratch buffer customization
+(setq initial-major-mode 'org-mode)
+(setq initial-scratch-message "")
 ;;; init.el ends here
