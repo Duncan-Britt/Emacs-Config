@@ -1,5 +1,6 @@
 ;; ORG AGENDA
 (setq org-agenda-files (list "~/Dropbox/agenda/agenda.org"))
+(setq org-archive-location "~/Dropbox/agenda/agenda_archive.org::%s_archive")
 
 
 (setq org-plantuml-jar-path (expand-file-name "~/plantuml-1.2024.4.jar"))
@@ -20,6 +21,7 @@
    (matlab . t)
    (sql . t)
    (plantuml . t)
+   (shell . t)
    ))
 
 ;; Needed to run mysql in org babel
@@ -85,15 +87,8 @@
   :custom (olivetti-body-width 100)
   :hook (org-mode . olivetti-mode))
 
-;; (use-package org-ai
-;;   :ensure t
-;;   :commands (org-ai-mode
-;;              org-ai-global-mode)
-;;   :init
-;;   (add-hook 'org-mode-hook #'org-ai-mode) ; enable org-ai in org-mode
-;;   (org-ai-global-mode) ; installs global keybindings on C-c M-a
-;;   :config
-;;   (setq org-ai-default-chat-model "gpt-4") ; if you are on the gpt-4 beta:
-;;   (org-ai-install-yasnippets)) ; if you are using yasnippet and want `ai` snippets
-
-;; (setq org-ai-openai-api-token "<ENTER YOUR API TOKEN HERE>")
+;; Enable the markdown export backend for Org mode
+(setq org-export-backends '(ascii html icalendar latex md))
+(use-package ox-gfm
+  :ensure t
+  :after org)

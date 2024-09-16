@@ -329,8 +329,8 @@ that you want loaded before Prelude.")
 (add-hook 'c++-mode-hook
           (lambda ()
             (define-key c++-mode-map (kbd "C-c c") 'recompile)
-            (define-key c++mode-map (kbd "C-c x") 'invoke-vterm-command)
-            (define-key c++mode-map (kbd "C-c '") 'set-vterm-command)))
+            (define-key c++-mode-map (kbd "C-c x") 'invoke-vterm-command)
+            (define-key c++-mode-map (kbd "C-c '") 'set-vterm-command)))
 
 ;; disable the feature where prelude disables syntax highlighting after certain line length.
 (setq prelude-whitespace nil)
@@ -416,6 +416,9 @@ that you want loaded before Prelude.")
 (autoload 'org-customizations "org-customizations")
 ;;;; Olvetti Mode
 (add-to-list 'load-path "~/.emacs.d/personal/olivetti-2.0.5")
+(with-eval-after-load 'olivetti
+  (setq olivetti-body-width 140))
+
 
 ;; Emacs Easy Draw
 ;; (add-to-list 'load-path (expand-file-name "~/.emacs.d/personal/el-easydraw/"))
@@ -509,7 +512,34 @@ that you want loaded before Prelude.")
   (require 'theme-switcher)
   (ts-init))
 
-;; Scratch buffer customization
-(setq initial-major-mode 'org-mode)
-(setq initial-scratch-message "")
+;; ;; Scratch buffer customization
+;; (setq initial-major-mode 'org-mode)
+;; (setq initial-scratch-message "")
+
+;; Open Agenda on startup
+       
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (find-file "~/Dropbox/agenda/agenda.org") ;; <-- org file
+            (org-agenda-list)))                       ;; <-- calendar
+
+;; Cassandra database
+(use-package cql-mode
+  :ensure t
+  :mode ("\\.cql\\'" . cql-mode)
+  :config
+  (setq cql-indent-level 2)) ;; Optionally set custom indentation
+
+(use-package sql-indent
+  :ensure t
+  :hook ((sql-mode . sqlind-minor-mode) 
+         (cql-mode . sqlind-minor-mode))     
+  :config
+  ;; You can further customize indentation or align rules here if needed
+  )
+
 ;;; init.el ends here
+
+
+
+
