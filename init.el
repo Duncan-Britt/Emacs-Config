@@ -561,6 +561,15 @@ that you want loaded before Prelude.")
 (use-package dired-preview
   :ensure t)
 
+;; Ebook reader
+(use-package nov
+  :ensure t)
+(add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
+
+
+(use-package org-fragtog
+  :ensure t)
+(add-hook 'org-mode-hook 'org-fragtog-mode)
 ;;; init.el ends here
 
 
