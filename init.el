@@ -527,7 +527,7 @@ that you want loaded before Prelude.")
 (define-key calendar-mode-map (kbd "RET") 'calendar-insert-date)
 
 ;; Theme toggler with image swap
-(add-to-list 'load-path "~/code/theme-switcher/")
+(add-to-list 'load-path "~/code/my-emacs-packages/theme-switcher/")
 (with-eval-after-load 'org
   (require 'theme-switcher)
   (ts-init))
@@ -570,6 +570,30 @@ that you want loaded before Prelude.")
 (use-package org-fragtog
   :ensure t)
 (add-hook 'org-mode-hook 'org-fragtog-mode)
+
+(setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
+
+;; Open file archival. Will move the open file to ~/archive.
+(defvar my-archive-dir "~/archive"
+  "Directory where files will be archived.")
+
+(defun my-archive-open-file ()
+  "Move the current file to the archive directory."
+  (interactive)
+  (if (buffer-file-name)
+      (let* ((file-path (buffer-file-name))
+             (relative-path (file-relative-name file-path (getenv "HOME")))
+             (archive-path (expand-file-name relative-path my-archive-dir)))
+        (if (file-exists-p file-path)
+            (progn
+              (save-buffer)
+              (make-directory (file-name-directory archive-path) t)
+              (rename-file file-path archive-path t)
+              (kill-buffer)
+              (message "Archived: %s" archive-path))
+          (message "File does not exist: %s" file-path)))
+    (message "No file is associated with this buffer.")))
+
 ;;; init.el ends here
 
 
