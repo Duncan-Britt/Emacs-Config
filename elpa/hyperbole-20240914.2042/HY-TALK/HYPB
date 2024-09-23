@@ -1,0 +1,112 @@
+* Use org-present package to turn Org outline into a presentation
+  you can step through with the space and delete keys.
+
+  Install:    <unless (featurep 'org-present) (package-install 'org-present)>
+
+(defun rsw-org-present-setup (buffer-name heading)
+  ;; Don't hide headline stars
+  (setq org-present-hide-stars-in-headings nil
+        ;; org-present-startup-folded nil
+	org-hide-emphasis-markers nil)
+
+  (setq org-present-text-scale 3)
+
+  ;; Show only top-level headlines
+  (org-overview)
+
+  ;; Unfold the current entry
+  (org-show-entry)
+
+  ;; Show only direct subheadings of the slide but don't expand them
+  (org-show-children))
+
+(add-hook 'org-present-after-navigate-functions 'rsw-org-present-setup)
+
+(add-hook 'org-present-mode-hook
+          (lambda ()
+            (org-present-big)
+            (org-display-inline-images)))
+
+(add-hook 'org-present-mode-quit-hook
+          (lambda ()
+            (org-present-small)
+            (org-remove-inline-images)))
+
+* Enable all Hyperbole keys including {M-RET} in Org mode
+
+  <setq hsys-org-enable-smart-keys t>
+
+* How to setup button2 and button3 as Action and Assist Mouse Keys
+
+Add to your Emacs init file:
+
+   (eval-after-load "hyperbole" '(hmouse-add-unshifted-smart-keys))
+
+or interactively after loading Hyperbole:
+
+   <hmouse-add-unshifted-smart-keys>
+
+* Keystroke Display
+
+** interaction-log Package - font-lock highlighted log of keys and commands
+   Used for EmacsConf 2022
+
+  Install,
+  Load,
+  Configure,
+  Activate:   <hypb:activate-interaction-log-mode>
+  Deactivate: <interaction-log-mode 0>
+
+** ALTERNATIVE: Keypression - overlaying parts of buffer (shows trail of keys)
+  Used for EmacsNYC talk
+
+  Install:    <unless (package-installed-p 'keypression) (package-install 'keypression)>
+  Activate:   <keypression-mode 1>
+  Deactivate: <keypression-mode 0>
+
+  Configure:
+    <setq keypression-use-child-frame t
+	  keypression-fade-out-delay 3.0
+	  keypression-frame-justify 'keypression-left-justified
+	  keypression-cast-command-name t
+	  keypression-cast-command-name-format "%s  %s"
+	  keypression-combine-same-keystrokes t
+	  keypression-font-face-attribute '(:width normal :height 200 :weight bold)>
+
+* Frame layout
+
+  <burly-open-bookmark "hyperorg">
+
+
+* Pathname Prefixes
+
+    "!${PATH}/date"                  - execute 'date' shell command
+
+    "&open ${hyperb:dir}/man/hyperbole.pdf"
+
+    "-subr"                      - load an Elisp library
+
+* Programming Buttons
+
+Emacs Yank Bug: bug#5320
+
+* Global Buttons
+
+<[Test ibut label]> {C-u C-n}
+
+<[Bufs]> {C-x C-b}
+
+<[iPython src]>: "/usr/local/Cellar/ipython/7.16.1/libexec/lib/python3.8/site-packages/IPython/"
+- Goto <(Hyperbole Todos)>
+
+<[ib]>   "(hyperbole)Implicit Buttons"
+<[frm]>  "(hyperbole)C-h h s f"
+
+"${hyperb:dir}/DEMO"
+
+"${hyperb:dir}/README.md#Programmer Quick Reference:4:2"
+"${hyperb:dir}/README.md#programmer-quick-reference:4:2"
+
+<hpath:find "${hyperb:dir}">
+
+<[PDF Viewer]> == "${hyperb:dir}/man/hyperbole.pdf"
