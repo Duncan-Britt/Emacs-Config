@@ -168,11 +168,6 @@ that you want loaded before Prelude.")
 ;; brew install emacs-plus@29 --with-xwidgets --with-imagemagick --with-modern-black-variant-icon
 ;; My customizations
 
-;; Set font
-(set-face-attribute 'default nil :font "Iosevka")
-;; font size
-(set-face-attribute 'default nil :height 120)
-
 ;; Initial Frame Size
 (setq initial-frame-alist
       (append initial-frame-alist
@@ -180,6 +175,16 @@ that you want loaded before Prelude.")
                 (top    . 0)
                 (width  . 240)
                 (height . 60))))
+
+;; ============================
+;; APPEARANCE
+;; ============================
+
+;; disable the feature where prelude disables syntax highlighting after certain line length.
+(setq prelude-whitespace nil)
+
+;; Truncate lines by default
+(setq-default truncate-lines t)
 
 (use-package ligature
   :config
@@ -219,61 +224,268 @@ that you want loaded before Prelude.")
   ;; per mode with `ligature-mode'.
   (global-ligature-mode t))
 
-;; Disable italics
-;; (set-face-italic 'font-lock-comment-face nil)
+(use-package fontaine
+  :ensure t
+  :config
+  (setq fontaine-presets
+        '((regular
+           :default-family "Iosevka Comfy"
+           :fixed-pitch-family "Iosevka Comfy"
+           :fixed-pitch-height 1.0
+           :variable-pitch-family "Iosevka Comfy Duo"
+           :variable-pitch-height 1.0)
+          (prose
+           :default-family "Iosevka Comfy"
+           :fixed-pitch-family "Iosevka Comfy"
+           :fixed-pitch-height 1.0
+           :variable-pitch-family "ETBembo"
+           :variable-pitch-height 1.4)))
+  (fontaine-mode 1)
+  (fontaine-set-preset 'regular))
 
-;; Make customisations that affect Emacs faces BEFORE loading a theme
-;; (any change needs a theme re-load to take effect).
-(require 'ef-themes)
+(use-package ef-themes
+  ;; Make customisations that affect Emacs faces BEFORE loading a theme
+  ;; (any change needs a theme re-load to take effect).
+  :after fontaine
+  :load-path "~/code/vendored-emacs-packages/ef-themes/"
+  :config
+  (setq ef-themes-headings
+        '((0 . (variable-pitch light 1.5))
+          (1 . (variable-pitch light 1.4))
+          (2 . (variable-pitch regular 1.3))
+          (3 . (variable-pitch regular 1.2))
+          (4 . (variable-pitch regular 1.1))
+          (5 . (variable-pitch 1.1)) ; absence of weight means `bold'
+          (6 . (variable-pitch 1.1))
+          (7 . (variable-pitch 1.1))
+          (t . (variable-pitch 1.1))))
+  ;; They are nil by default...
+  (setq ef-themes-mixed-fonts t
+        ef-themes-variable-pitch-ui t)
+  ;; Start up theme:
+  (mapc #'disable-theme custom-enabled-themes) ; Disable all other themes to avoid awkward blending:
+  ;; (load-theme 'ef-dream :no-confirm)
+  (ef-themes-select 'ef-dream)
+  ;; use this to load the theme which also calls `ef-themes-post-load-hook':
+  ;; (ef-themes-select 'ef-winter)
 
-;; If you like two specific themes and want to switch between them, you
-;; can specify them in `ef-themes-to-toggle' and then invoke the command
-;; `ef-themes-toggle'.  All the themes are included in the variable
-;; `ef-themes-collection'.
-;; (setq ef-themes-to-toggle '(ef-summer ef-winter))
+  ;; The themes we provide are recorded in the `ef-themes-dark-themes' and `ef-themes-light-themes'.
 
-(setq ef-themes-headings
-      '((0 . (variable-pitch light 1.9))
-        (1 . (variable-pitch light 1.8))
-        (2 . (variable-pitch regular 1.7))
-        (3 . (variable-pitch regular 1.6))
-        (4 . (variable-pitch regular 1.5))
-        (5 . (variable-pitch 1.4)) ; absence of weight means `bold'
-        (6 . (variable-pitch 1.3))
-        (7 . (variable-pitch 1.2))
-        (t . (variable-pitch 1.1))))
+  ;; We also provide these commands, but do not assign them to any key:
+  ;;
+  ;; - `ef-themes-toggle'
+  ;; - `ef-themes-select'
+  ;; - `ef-themes-select-dark'
+  ;; - `ef-themes-select-light'
+  ;; - `ef-themes-load-random'
+  ;; - `ef-themes-preview-colors'
+  ;; - `ef-themes-preview-colors-current'
+  )
 
-;; They are nil by default...
-(setq ef-themes-mixed-fonts nil
-      ef-themes-variable-pitch-ui nil)
+(use-package theme-switcher
+  :load-path "~/code/my-emacs-packages/theme-switcher/"
+  :after (org ef-themes)
+  :init
+  (setq *theme-switcher-themes-dark*
+        '("ef-trio-dark"
+          "ef-rosa"
+          "ef-winter"
+          "ef-autumn"
+          "ef-cherie"
+          "ef-tritanopia-dark"
+          "ef-elea-dark"
+          "ef-dream"
+          "ef-melissa-dark"
+          "ef-owl"))
+  (setq *theme-switcher-themes-light*
+        '("ef-day"
+          "ef-light"
+          "ef-kassio"
+          "ef-frost"
+          "ef-arbutus"
+          "ef-melissa-light"
+          "ef-maris-light"
+          "ef-elea-light"
+          "ef-summer"
+          "ef-cyprus"
+          "ef-reverie"))
+  :bind
+  ("C-t" . theme-switcher-choose-theme)
+  (:map org-mode-map
+        ("C-c C-x C-v" . ts-toggle-inline-images)))
 
-;; Read the doc string or manual for this one.  The symbols can be
-;; combined in any order.
-;; (setq ef-themes-region '(intense no-extend neutral))
+(use-package breadcrumb
+  :ensure t
+  :config
+  (breadcrumb-mode))
 
-;; Disable all other themes to avoid awkward blending:
-(mapc #'disable-theme custom-enabled-themes)
+(use-package spaceline
+  :ensure t
+  :config
+  (require 'spaceline-config)
+  (spaceline-emacs-theme)
+ 
+  (defun my-spaceline-theme ()
+    "My custom Spaceline theme."
+    (setq-default mode-line-format
+                  '("%e"
+                    mode-line-front-space
+                    ;; evil-mode-line-tag
+                    mode-line-mule-info
+                    mode-line-client
+                    mode-line-modified
+                    mode-line-remote
+                    mode-line-frame-identification
+                    mode-line-buffer-identification
+                    "   "                    
+                    "   "
+                    ;; mode-line-position
+                    (vc-mode vc-mode) ;; Remove this line to exclude Git branch
+                    "  "
+                    ;; mode-line-modes                    
+                    mode-line-misc-info
+                    mode-line-end-spaces)))
 
-;; Load the theme of choice:
-(load-theme 'ef-dream :no-confirm)
+  ;; Apply your custom theme
+  (my-spaceline-theme)
+  ;; display time in mode line
+  (setq display-time-day-and-date t
+        display-time-24hr-format nil)
+  (display-time)
 
-;; OR use this to load the theme which also calls `ef-themes-post-load-hook':
-;; (ef-themes-select 'ef-winter)
+  (display-battery-mode 1))
 
-;; The themes we provide are recorded in the `ef-themes-dark-themes',
-;; `ef-themes-light-themes'.
+(blink-cursor-mode)
 
-;; We also provide these commands, but do not assign them to any key:
-;;
-;; - `ef-themes-toggle'
-;; - `ef-themes-select'
-;; - `ef-themes-select-dark'
-;; - `ef-themes-select-light'
-;; - `ef-themes-load-random'
-;; - `ef-themes-preview-colors'
-;; - `ef-themes-preview-colors-current'
+;; =============================
+;; ORG MODE
+;; =============================
+(defun my-org-syntax-table-modify ()
+  "Modify `org-mode-syntax-table' for the current org buffer."
+  (modify-syntax-entry ?< "." org-mode-syntax-table)
+  (modify-syntax-entry ?> "." org-mode-syntax-table))
 
-;; C++ stuff
+(use-package org
+  :config
+  (setq org-agenda-files (list (expand-file-name "~/Dropbox/agenda/agenda.org")))
+  (setq org-archive-location "~/Dropbox/agenda/agenda_archive.org::%s_archive") ;; <-- unused? Org Archiver has it's own location.
+  (setq org-plantuml-jar-path (expand-file-name "~/plantuml-1.2024.4.jar")) ;; <-- doesn't exist on my new mac
+  (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
+  (org-babel-do-load-languages ;; Org source block execution
+   'org-babel-load-languages
+   '((emacs-lisp . t)
+     (python . t)
+     (ruby . t)
+     (js . t)
+     (C . t)
+     (octave . t)
+     (latex . t)
+     (lisp . t)
+     (dot . t)
+     (matlab . t)
+     (sql . t)
+     (plantuml . t)
+     (shell . t)
+     ))
+  ;; Needed to run mysql in org babel
+  (add-to-list 'exec-path "/usr/local/mysql-8.3.0-macos14-x86_64/bin") ;; <-- doesn't exist on new mac
+  (setq org-babel-python-command "python3")
+  (setq org-log-note-clock-out t)
+  (setq org-format-latex-options (plist-put org-format-latex-options :scale 1.2))
+  (setq org-image-actual-width nil)
+  (setq org-list-allow-alphabetical t)
+  (setq org-latex-listings 'minted ;; Export to LateX PDF using minted package
+        org-latex-packages-alist '(("" "minted"))
+        org-latex-pdf-process
+        '("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+          "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
+  (setq org-export-backends '(ascii html icalendar latex md))
+  (require 'ox-gfm nil t) ;; <-- For github flavored markdown export
+  :hook ((org-mode . variable-pitch-mode)
+         (org-mode . visual-line-mode)
+         (org-mode . pixel-scroll-precision-mode)
+         (org-mode . my-org-syntax-table-modify)
+         (org-mode . (lambda () (display-line-numbers-mode 0)))))
+
+(use-package mw-thesaurus
+  :ensure t
+  :after org
+  :bind
+  (:map org-mode-map
+        ("C-c t" . mw-thesaurus-lookup-dwim)))
+
+(use-package ox-gfm
+  :ensure t
+  :after org)
+
+(use-package olivetti
+  :load-path "~/code/vendored-emacs-packages/olivetti"
+  :custom (olivetti-body-width 140)
+  :hook (org-mode . olivetti-mode))
+
+(use-package org-bullets
+  :ensure t
+  :config
+  (add-hook 'org-mode-hook (lambda ()
+                             (org-bullets-mode 1)
+                             (org-indent-mode 1))))
+
+(use-package org-appear
+  :after hyperbole
+  :hook (org-mode . org-appear-mode)
+  :custom
+  (org-hide-emphasis-markers t) ; Hide /emphasis/ markers in org mode
+  (org-appear-autolinks t) ; <-- This doesn't work when hyperbole package is loaded.
+  (org-pretty-entities t)
+  (org-pretty-entities-include-sub-superscripts nil) ; <-- This doesn't play nicely with under_scores
+  (org-appear-autoentities t)
+  (org-appear-autosubmarkers t))
+
+(use-package org-cmenu
+  :load-path "~/code/vendored-emacs-packages/org-cmenu/"
+  :after org
+  :config (require 'org-cmenu-setup)
+  :bind
+  (:map org-mode-map
+        ("M-n" . org-cmenu)))
+
+(use-package archiver
+  :load-path "~/code/my-emacs-packages/archiver/"
+  :after org
+  :init
+  (setq *archiver-agenda-archive-location*
+        (expand-file-name "~/Dropbox/agenda/agenda_archive.org"))
+  :bind
+  (:map org-mode-map
+        ("C-c C-x C-a" . archiver-archive-heading)))
+
+;; automatically toggle latex previews in org mode.
+(use-package org-fragtog
+  :ensure t
+  :hook (org-mode . org-fragtog-mode))
+
+;; ===========================
+;; Text Editing and Movement
+;; ===========================
+
+(setq next-line-add-newlines t) ;; c-n adds newlines
+
+(use-package ace-window
+  :config
+  (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)))
+
+;; MAKE C-s search case-insensitive:
+;; (setq case-fold-search t)
+
+(use-package yasnippet
+  :ensure t
+  :config
+  (setq yas-snippet-dirs '("~/code/yasnippets"))
+  (yas-global-mode 1))
+
+;; ===============
+;; C/C++ stuff
+;; ===============
 (defun read-from-minibuffer-with-validation (prompt valid-p)
   (require 'cl-lib)
   (let ((valid? nil)
@@ -352,68 +564,16 @@ that you want loaded before Prelude.")
             (define-key c++-mode-map (kbd "C-c x") 'invoke-vterm-command)
             (define-key c++-mode-map (kbd "C-c '") 'set-vterm-command)))
 
-;; disable the feature where prelude disables syntax highlighting after certain line length.
-(setq prelude-whitespace nil)
+;; ==================
+;; COMMON LISP
+;; ==================
 
-;; Truncate lines by default
-(setq-default truncate-lines t)
-
-;; c-n adds newlines
-(setq next-line-add-newlines t)
-
-;; function to make insert greek letters after typing their name.
-;; also includes other symbols besides greek letters like infinity and setmemership (in).
-;; bound to c-x c-g below.
-(defun to-greek ()
-  "convert word at point to greek letter."
-  (interactive)
-  (let ((word (thing-at-point 'word))
-	(bounds (bounds-of-thing-at-point 'word)))
-    (let ((pos1 (car bounds))
-	  (pos2 (cdr bounds)))
-      ;; (message
-      ;;  "word begins at [%s], end at [%s], word is [%s]"
-      ;;  pos1 pos2 word)
-      (delete-region pos1 pos2)
-      (insert
-       (pcase word
-	 ("lambda" "λ")
-	 ("omega" "ω")
-	 ("pi" "π")
-	 ("rho" "ρ")
-	 ("beta" "β")
-	 ("alpha" "α")
-	 ("gamma" "γ")
-	 ("delta" "δ")
-	 ("theta" "θ")
-	 ("phi" "φ")
-	 ("tau" "τ")
-	 ("sigma" "σ")
-	 ("infinity" "∞")
-	 ("in" "∈")
-         ("mu" "µ")
-	 ("check" "✓")
-	 (_ word))))))
-
-(global-set-key (kbd "C-x C-g") 'to-greek)
-
-;; Merriam Webster Thesaurus keybinding
-(eval-after-load 'org
-  '(define-key org-mode-map (kbd "C-c t") 'mw-thesaurus-lookup-dwim))
-
-;; setup yasnippet
-(use-package yasnippet
-  :ensure t
-  :config
-  (setq yas-snippet-dirs '("~/code/yasnippets"))
-  (yas-global-mode 1))
-
-;; Common Lisp
 (add-to-list 'load-path "~/.emacs.d/personal/common-lisp.el")
 (add-to-list 'load-path "~/.emacs.d/personal/lass.el")
 
-;; SLIME
-;; Common Lisp
+;; ==================
+;; COMMON LISP: SLIME
+;; ==================
 (setq inferior-lisp-program (executable-find "sbcl"))
 (load (expand-file-name "~/quicklisp/slime-helper.el"))
 ;; replace "sbcl" with the path to your implementation
@@ -421,15 +581,6 @@ that you want loaded before Prelude.")
 (setq slime-lisp-implementations '((sbcl ("sbcl" "--dynamic-space-size" "4000"))
                                    (ccl64 ("/usr/local/bin/ccl64"))))
 (setq slime-default-lisp 'sbcl)
-
-
-;; Org Mode Customizations
-(add-to-list 'load-path (expand-file-name "~/.emacs.d/personal/org-customizations.el"))
-(autoload 'org-customizations "org-customizations")
-;;;; Olvetti Mode
-;; (add-to-list 'load-path "~/.emacs.d/personal/olivetti-2.0.5")
-(with-eval-after-load 'olivetti
-  (setq olivetti-body-width 140))
 
 
 ;; Emacs Easy Draw
@@ -449,30 +600,28 @@ that you want loaded before Prelude.")
 ;;   (require 'edraw-org)
 ;;   (edraw-org-setup-exporter))
 
+;; =====================
+;; MISCELLANEOUS
+;; =====================
+
 (add-to-list 'load-path (expand-file-name "~/.emacs.d/personal/update-table/"))
 (load (expand-file-name "~/.emacs.d/personal/update-table/update-table.el"))
 
-;; MAKE C-s search case-insensitive:
-;; (setq case-fold-search t)
+(use-package safe
+  :load-path "~/.safe/")
 
-;; ORG-AI
-(load "~/.safe/safe.el")
-(use-package org-ai
-  :ensure
-  :commands (org-ai-mode org-ai-global-mode)
-  :init
-  (add-hook 'org-mode-hook #'org-ai-mode) ; enable org-ai in org-mode
-  (org-ai-global-mode) ; installs global keybindings on C-c M-a
-  :config
-  (setq org-ai-openai-api-token *api-token*)
-  (setq org-ai-default-chat-model "gpt-4o")
-  ;; (org-ai-install-yasnippets)
-  )
-
-(use-package breadcrumb
-  :ensure t
-  :config
-  (breadcrumb-mode))
+;; ;; ORG-AI
+;; (use-package org-ai
+;;   :after safe
+;;   :ensure t
+;;   :commands (org-ai-mode org-ai-global-mode)
+;;   :init
+;;   (add-hook 'org-mode-hook #'org-ai-mode) ; enable org-ai in org-mode
+;;   (org-ai-global-mode) ; installs global keybindings on C-c M-a
+;;   :config
+;;   (setq org-ai-openai-api-token *api-token*)
+;;   (setq org-ai-default-chat-model "gpt-4o")  
+;;   )
 
 ;; Spell Check Dictionary
 (setq ispell-personal-dictionary "~/.emacs.d/personal/my-personal-ispell-dictionary")
@@ -519,65 +668,15 @@ that you want loaded before Prelude.")
 
 (define-key calendar-mode-map (kbd "RET") 'calendar-insert-date)
 
-(use-package theme-switcher
-  :load-path "~/code/my-emacs-packages/theme-switcher/"
-  :after org
-  :init
-  (setq *theme-switcher-themes-dark*
-        '("ef-trio-dark"
-          "ef-rosa"
-          "ef-winter"
-          "ef-autumn"
-          "ef-cherie"
-          "ef-tritanopia-dark"
-          "ef-elea-dark"
-          "ef-dream"
-          "ef-melissa-dark"
-          "ef-owl"))
-  (setq *theme-switcher-themes-light*
-        '("ef-day"
-          "ef-light"
-          "ef-kassio"
-          "ef-frost"
-          "ef-arbutus"
-          "ef-melissa-light"
-          "ef-maris-light"
-          "ef-elea-light"
-          "ef-summer"
-          "ef-cyprus"
-          "ef-reverie"))
-  :bind
-  ("C-t" . theme-switcher-choose-theme)
-  (:map org-mode-map
-        ("C-c C-x C-v" . ts-toggle-inline-images)))
-
-(use-package archiver
-  :load-path "~/code/my-emacs-packages/archiver/"
-  :after org
-  :init
-  (setq *archiver-agenda-archive-location*
-        (expand-file-name "~/Dropbox/agenda/agenda_archive.org"))
-  :bind
-  (:map org-mode-map
-        ("C-c C-x C-a" . archiver-archive-heading)))
-
 (use-package rotor
+  :after safe
   :load-path "~/code/my-emacs-packages/rotor/")
-
-(use-package org-cmenu
-  :load-path "~/code/org-cmenu/"
-  :after org
-  :config (require 'org-cmenu-setup)
-  :bind
-  (:map org-mode-map
-        ("C-m" . org-cmenu)))
 
 ;; ;; Scratch buffer customization
 ;; (setq initial-major-mode 'org-mode)
 ;; (setq initial-scratch-message "")
 
 ;; Open Agenda on startup
-       
 (add-hook 'emacs-startup-hook
           (lambda ()
             (find-file "~/Dropbox/agenda/agenda.org") ;; <-- org file
@@ -592,26 +691,14 @@ that you want loaded before Prelude.")
 
 (use-package sql-indent
   :ensure t
-  :hook ((sql-mode . sqlind-minor-mode) 
-         (cql-mode . sqlind-minor-mode))     
+  :hook ((sql-mode . sqlind-minor-mode)
+         (cql-mode . sqlind-minor-mode))
   :config
   ;; You can further customize indentation or align rules here if needed
   )
 
 (use-package dired-preview
   :ensure t)
-
-;; Ebook reader
-(use-package nov
-  :ensure t)
-(add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
-
-;; automatically toggle latex previews in org mode.
-(use-package org-fragtog
-  :ensure t)
-(add-hook 'org-mode-hook 'org-fragtog-mode)
-
-(setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
 
 ;; Useful for debugging elisp:
 ;; Example: (pair-tree '(1 2 3))
@@ -623,15 +710,13 @@ that you want loaded before Prelude.")
 ;; Blog publishing
 (add-to-list 'load-path (expand-file-name "~/.emacs.d/personal/blog-publishing.el"))
 
-(use-package hyperbole ;; This conflicts with org appear.
+(use-package hyperbole ;; This conflicts with org appear a bit, for links.
   :ensure t
   :config
   (hyperbole-mode 0))  ;; 1 -> Enable Hyperbole mode after installation, 0 -> don't
 
 (use-package command-log-mode
   :ensure t)
-
-(blink-cursor-mode)
 
 (defun entire-buffer-replace (from to)
   "Do search and replace on entire buffer without moving point.
@@ -646,9 +731,55 @@ Display the number of replacements made."
         (setq count (1+ count)))
       (message "Replaced %d occurrences of '%s'." count from))))
 
+;; Ebook reader
+(use-package nov
+  :ensure t)
+(add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
+
 (use-package ready-player
   :ensure t
   :config
   (ready-player-mode +1))
+
+(use-package annotate
+  :ensure t
+  :config
+  (setq annotate-file "~/.emacs.d/annotations"))
+
+;; function to make insert greek letters after typing their name.
+;; also includes other symbols besides greek letters like infinity and setmemership (in).
+;; bound to c-x c-g below.
+(defun to-greek ()
+  "convert word at point to greek letter."
+  (interactive)
+  (let ((word (thing-at-point 'word))
+	(bounds (bounds-of-thing-at-point 'word)))
+    (let ((pos1 (car bounds))
+	  (pos2 (cdr bounds)))
+      ;; (message
+      ;;  "word begins at [%s], end at [%s], word is [%s]"
+      ;;  pos1 pos2 word)
+      (delete-region pos1 pos2)
+      (insert
+       (pcase word
+	 ("lambda" "λ")
+	 ("omega" "ω")
+	 ("pi" "π")
+	 ("rho" "ρ")
+	 ("beta" "β")
+	 ("alpha" "α")
+	 ("gamma" "γ")
+	 ("delta" "δ")
+	 ("theta" "θ")
+	 ("phi" "φ")
+	 ("tau" "τ")
+	 ("sigma" "σ")
+	 ("infinity" "∞")
+	 ("in" "∈")
+         ("mu" "µ")
+	 ("check" "✓")
+	 (_ word))))))
+
+(global-set-key (kbd "C-x C-g") 'to-greek)
 
 ;;; init.el ends here
