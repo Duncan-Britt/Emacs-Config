@@ -38,18 +38,16 @@
 ;; Enable visual line mode for org buffers.
 (add-hook 'org-mode-hook 'visual-line-mode)
 
-;; Org Appear is awesome but doesn't play nice with hyperbole mode.
-;; So I disabled it for the time being to try hyperbole.
-;; (use-package org-appear
-;;   :after hyperbole
-;;   :hook (org-mode . org-appear-mode)
-;;   :custom
-;;   (org-hide-emphasis-markers t) ; Hide /emphasis/ markers in org mode
-;;   (org-appear-autolinks t)
-;;   (org-pretty-entities t)
-;;   (org-pretty-entities-include-sub-superscripts nil) ; <-- This doesn't play nicely with under_scores
-;;   (org-appear-autoentities t)
-;;   (org-appear-autosubmarkers t))
+(use-package org-appear
+  :after hyperbole
+  :hook (org-mode . org-appear-mode)
+  :custom
+  (org-hide-emphasis-markers t) ; Hide /emphasis/ markers in org mode
+  (org-appear-autolinks t) ; <-- This doesn't work when hyperbole package is loaded.
+  (org-pretty-entities t)
+  (org-pretty-entities-include-sub-superscripts nil) ; <-- This doesn't play nicely with under_scores
+  (org-appear-autoentities t)
+  (org-appear-autosubmarkers t))
 
 ;; (font-lock-add-keywords 'org-mode
 ;;                         '(("^ *\\([-]\\) "

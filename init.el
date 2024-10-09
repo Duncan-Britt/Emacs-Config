@@ -408,15 +408,6 @@ that you want loaded before Prelude.")
   (setq yas-snippet-dirs '("~/code/yasnippets"))
   (yas-global-mode 1))
 
-;; (use-package annotate
-;;   :ensure t
-;;   ;; :config
-;;   ;; Here you can place any configuration code for annotate.el
-;;   ;; For example, to set a custom annotation file, you could use:
-;;   ;; (setq annotate-file "~/.emacs.d/annotations")
-;;   )
-
-
 ;; Common Lisp
 (add-to-list 'load-path "~/.emacs.d/personal/common-lisp.el")
 (add-to-list 'load-path "~/.emacs.d/personal/lass.el")
@@ -531,6 +522,30 @@ that you want loaded before Prelude.")
 (use-package theme-switcher
   :load-path "~/code/my-emacs-packages/theme-switcher/"
   :after org
+  :init
+  (setq *theme-switcher-themes-dark*
+        '("ef-trio-dark"
+          "ef-rosa"
+          "ef-winter"
+          "ef-autumn"
+          "ef-cherie"
+          "ef-tritanopia-dark"
+          "ef-elea-dark"
+          "ef-dream"
+          "ef-melissa-dark"
+          "ef-owl"))
+  (setq *theme-switcher-themes-light*
+        '("ef-day"
+          "ef-light"
+          "ef-kassio"
+          "ef-frost"
+          "ef-arbutus"
+          "ef-melissa-light"
+          "ef-maris-light"
+          "ef-elea-light"
+          "ef-summer"
+          "ef-cyprus"
+          "ef-reverie"))
   :bind
   ("C-t" . theme-switcher-choose-theme)
   (:map org-mode-map
@@ -545,6 +560,17 @@ that you want loaded before Prelude.")
   :bind
   (:map org-mode-map
         ("C-c C-x C-a" . archiver-archive-heading)))
+
+(use-package rotor
+  :load-path "~/code/my-emacs-packages/rotor/")
+
+(use-package org-cmenu
+  :load-path "~/code/org-cmenu/"
+  :after org
+  :config (require 'org-cmenu-setup)
+  :bind
+  (:map org-mode-map
+        ("C-m" . org-cmenu)))
 
 ;; ;; Scratch buffer customization
 ;; (setq initial-major-mode 'org-mode)
@@ -580,7 +606,7 @@ that you want loaded before Prelude.")
   :ensure t)
 (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
 
-;; Automatically toggle Latex previews in org mode.
+;; automatically toggle latex previews in org mode.
 (use-package org-fragtog
   :ensure t)
 (add-hook 'org-mode-hook 'org-fragtog-mode)
@@ -600,15 +626,29 @@ that you want loaded before Prelude.")
 (use-package hyperbole ;; This conflicts with org appear.
   :ensure t
   :config
-  (hyperbole-mode 1))  ;; 1 -> Enable Hyperbole mode after installation, 0 -> don't
+  (hyperbole-mode 0))  ;; 1 -> Enable Hyperbole mode after installation, 0 -> don't
 
 (use-package command-log-mode
   :ensure t)
 
 (blink-cursor-mode)
 
+(defun entire-buffer-replace (from to)
+  "Do search and replace on entire buffer without moving point.
+Display the number of replacements made."
+  (interactive "MReplace: \nMWith: ")
+  (save-excursion
+    (goto-char (point-min))
+    (let ((case-fold-search nil)
+          (count 0))
+      (while (search-forward from nil t)
+        (replace-match to t t)
+        (setq count (1+ count)))
+      (message "Replaced %d occurrences of '%s'." count from))))
+
+(use-package ready-player
+  :ensure t
+  :config
+  (ready-player-mode +1))
+
 ;;; init.el ends here
-
-
-
-
