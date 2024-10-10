@@ -249,8 +249,8 @@ Overrides org-html-template defined in Emacs core."
        (list "static"
              :recursive t
              :base-directory (concat *path-to-source-directory* "/content")
-             :exclude ".*\~\\|.*node_modules\/.*" ;; Using CDN, excluding local node modules
-             :base-extension "css\\|js\\|html\\|png\\|jpg\\|jpeg\\|svg\\|webp\\|gif\\|pdf\\|mp3\\|ogg\\|swf\\|stl\\|obj\\|wasm"
+             :exclude ".*\~\\|.*node_modules\/.*" ;; Using CDN, excluding local node modules             
+             :base-extension "css\\|js\\|html\\|png\\|jpg\\|jpeg\\|svg\\|webp\\|gif\\|pdf\\|mp3\\|ogg\\|swf\\|stl\\|obj\\|wasm\\|eot\\|woff\\|woff2\\|ttf"
              :publishing-directory (concat *path-to-publishing-directory* "/public")
              :publishing-function 'org-publish-attachment)
        ))

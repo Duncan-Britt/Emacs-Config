@@ -239,7 +239,7 @@ that you want loaded before Prelude.")
            :fixed-pitch-family "Iosevka Comfy"
            :fixed-pitch-height 1.0
            :variable-pitch-family "ETBembo"
-           :variable-pitch-height 1.4)))
+           :variable-pitch-height 1.2)))
   (fontaine-mode 1)
   (fontaine-set-preset 'regular))
 
@@ -464,15 +464,31 @@ that you want loaded before Prelude.")
   :ensure t
   :hook (org-mode . org-fragtog-mode))
 
+;; (use-package gcal
+;;   :after (org safe)
+;;   :load-path "~/code/vendored-emacs-packages/gcal/"
+;;   :config
+;;   ;; From Google Developer Console
+;;   (setq gcal-client-id *client-id*)
+;;   (setq gcal-client-secret *client-secret*) ;; <-- API key
+;;   (require 'gcal-org))
+
+;; (use-package my-gcal
+;;   :after (org gcal safe)
+;;   :load-path "~/code/my-emacs-packages/my-gcal/"
+;;   :init
+;;   (setq *my-gcal-calendar-id* *gmail*)
+;;   (setq *my-gcal-agenda-file* (expand-file-name "~/Dropbox/agenda/agenda.org"))
+;;   (setq *my-gcal-agenda-heading* "Google Calendar")
+;;   (setq *my-gcal-agenda-cache* (expand-file-name "~/Dropbox/agenda/agenda.gcal-cache"))
+;;   :hook
+;;   (org-mode . my-gcal-org-pull-if-agenda))
+
 ;; ===========================
 ;; Text Editing and Movement
 ;; ===========================
 
 (setq next-line-add-newlines t) ;; c-n adds newlines
-
-(use-package ace-window
-  :config
-  (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)))
 
 ;; MAKE C-s search case-insensitive:
 ;; (setq case-fold-search t)
@@ -482,6 +498,48 @@ that you want loaded before Prelude.")
   :config
   (setq yas-snippet-dirs '("~/code/yasnippets"))
   (yas-global-mode 1))
+
+;; ========================
+;; WINDOW MANAGEMENT
+;; ========================
+
+(use-package popper
+  :ensure t ; or :straight t
+  :bind (("C-`"   . popper-toggle)
+         ("M-`"   . popper-cycle)
+         ("C-M-`" . popper-toggle-type)) ;; <-- this keybinding doesn't work.
+  :init
+  (setq popper-reference-buffers
+        '("\\*Messages\\*"
+          "Output\\*$"
+          "\\*Async Shell Command\\*"
+          "\\*Org Agenda\\*"
+          "\\*slime-repl sbcl\\*"
+          help-mode
+          compilation-mode))
+  (setq popper-group-function #'popper-group-by-projectile)  
+  (popper-mode +1)
+  (popper-echo-mode +1) ; For echo area hints
+;;   (defun my/popper-display-popup-at-side (buffer &optional alist)
+;;     "Display popup-buffer BUFFER at the right side of the screen.
+;; ALIST is an association list of action symbols and values.  See
+;; Info node `(elisp) Buffer Display Action Alists' for details of
+;; such alists."
+;;     (display-buffer-in-side-window
+;;      buffer
+;;      (append alist
+;;              `((window-width . ,popper-window-height)
+;;                (side . right)
+;;                (slot . 1)))))
+  ;; :custom  
+  ;; (popper-display-function #'(lambda (buffer &optional alist)
+  ;;                              (let ((window (my/popper-display-popup-at-side buffer alist)))
+  ;;                                (select-window window))))
+  ) 
+
+(use-package ace-window
+  :config
+  (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)))
 
 ;; ===============
 ;; C/C++ stuff
@@ -565,6 +623,12 @@ that you want loaded before Prelude.")
             (define-key c++-mode-map (kbd "C-c '") 'set-vterm-command)))
 
 ;; ==================
+;; EMACS LISP
+;; ==================
+
+(add-hook 'emacs-lisp-mode-hook 'prettify-symbols-mode) ;; lambda becomes λ.
+
+;; ==================
 ;; COMMON LISP
 ;; ==================
 
@@ -622,6 +686,16 @@ that you want loaded before Prelude.")
 ;;   (setq org-ai-openai-api-token *api-token*)
 ;;   (setq org-ai-default-chat-model "gpt-4o")  
 ;;   )
+
+(use-package gptel
+  :after safe
+  :ensure t
+  :config  
+  (setq
+   gptel-model "claude-3-5-sonnet-20240620" ;  "claude-3-opus-20240229" also available
+   gptel-backend (gptel-make-anthropic "Claude"
+                   :stream t :key *api-token*))
+  (setq gptel-default-mode 'org-mode))
 
 ;; Spell Check Dictionary
 (setq ispell-personal-dictionary "~/.emacs.d/personal/my-personal-ispell-dictionary")
