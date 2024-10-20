@@ -35,10 +35,15 @@
 (defvar gptel-max-tokens)
 (defvar gptel--system-message)
 (defvar json-object-type)
-
 (defvar gptel-mode)
 (defvar gptel-track-response)
+(defvar gptel-track-media)
+(declare-function gptel-context--collect-media "gptel-context")
+(declare-function gptel--base64-encode "gptel")
 (declare-function gptel--trim-prefixes "gptel")
+(declare-function gptel--parse-media-links "gptel")
+(declare-function gptel--model-capable-p "gptel")
+(declare-function gptel--model-name "gptel")
 (declare-function gptel--get-api-key "gptel")
 (declare-function prop-match-value "text-property-search")
 (declare-function text-property-search-backward "text-property-search")
@@ -69,6 +74,21 @@
     (declare-function json-encode "json" (object))
     `(let ((json-false :json-false))
       (json-encode ,object))))
+
+(defun gptel--process-models (models)
+  "Convert items in MODELS to symbols with appropriate properties."
+  (let ((models-processed))
+    (dolist (model models)
+      (cl-etypecase model
+        (string (push (intern model) models-processed))
+        (symbol (push model models-processed))
+        (cons
+         (cl-destructuring-bind (name . props) model
+           (setf (symbol-plist name)
+                 (map-merge 'plist (symbol-plist name)
+                            props))
+           (push name models-processed)))))
+    (nreverse models-processed)))
 
 ;;; Common backend struct for LLM support
 (defvar gptel--known-backends nil
@@ -112,7 +132,7 @@ with differing settings.")
 (cl-defmethod gptel--request-data ((_backend gptel-openai) prompts)
   "JSON encode PROMPTS for sending to ChatGPT."
   (let ((prompts-plist
-         `(:model ,gptel-model
+         `(:model ,(gptel--model-name gptel-model)
            :messages [,@prompts]
            :stream ,(or (and gptel-stream gptel-use-curl
                          (gptel-backend-stream gptel-backend))
@@ -124,7 +144,10 @@ with differing settings.")
     prompts-plist))
 
 (cl-defmethod gptel--parse-buffer ((_backend gptel-openai) &optional max-entries)
-  (let ((prompts) (prop))
+  (let ((prompts) (prop)
+        (include-media (and gptel-track-media
+                            (or (gptel--model-capable-p 'media)
+                                (gptel--model-capable-p 'url)))))
     (if (or gptel-mode gptel-track-response)
         (while (and
                 (or (not max-entries) (>= max-entries 0))
@@ -133,34 +156,95 @@ with differing settings.")
                             (when (get-char-property (max (point-min) (1- (point)))
                                                      'gptel)
                               t))))
-          (push (list :role (if (prop-match-value prop) "assistant" "user")
-                      :content
-                      (string-trim
-                       (buffer-substring-no-properties (prop-match-beginning prop)
-                                                       (prop-match-end prop))
-                       (format "[\t\r\n ]*\\(?:%s\\)?[\t\r\n ]*"
-                               (regexp-quote (gptel-prompt-prefix-string)))
-                       (format "[\t\r\n ]*\\(?:%s\\)?[\t\r\n ]*"
-                               (regexp-quote (gptel-response-prefix-string)))))
-                prompts)
+          (if (prop-match-value prop)   ;assistant role
+              (push (list :role "assistant"
+                          :content
+                          (buffer-substring-no-properties (prop-match-beginning prop)
+                                                          (prop-match-end prop)))
+                    prompts)
+            (if include-media
+                (push (list :role "user"
+                            :content
+                            (gptel--openai-parse-multipart
+                             (gptel--parse-media-links
+                              major-mode (prop-match-beginning prop) (prop-match-end prop))))
+                      prompts)
+              (push (list :role "user"
+                          :content
+                          (gptel--trim-prefixes
+                           (buffer-substring-no-properties (prop-match-beginning prop)
+                                                           (prop-match-end prop))))
+                    prompts)))
           (and max-entries (cl-decf max-entries)))
       (push (list :role "user"
                   :content
-                  (string-trim
-                   (buffer-substring-no-properties (point-min) (point-max))
-                   (format "[\t\r\n ]*\\(?:%s\\)?[\t\r\n ]*"
-                           (regexp-quote (gptel-prompt-prefix-string)))
-                   (format "[\t\r\n ]*\\(?:%s\\)?[\t\r\n ]*"
-                           (regexp-quote (gptel-response-prefix-string)))))
-            prompts)
-      (and max-entries (cl-decf max-entries)))
+                  (gptel--trim-prefixes (buffer-substring-no-properties (point-min) (point-max))))
+            prompts))
     (cons (list :role "system"
                 :content gptel--system-message)
           prompts)))
 
-(cl-defmethod gptel--wrap-user-prompt ((_backend gptel-openai) prompts)
-  "Wrap the last user prompt in PROMPTS with the context string."
-  (cl-callf gptel-context--wrap (plist-get (car (last prompts)) :content)))
+;; TODO This could be a generic function
+(defun gptel--openai-parse-multipart (parts)
+  "Convert a multipart prompt PARTS to the OpenAI API format.
+
+The input is an alist of the form
+ ((:text \"some text\")
+  (:media \"/path/to/media.png\" :mime \"image/png\")
+  (:text \"More text\")).
+
+The output is a vector of entries in a backend-appropriate
+format."
+  (cl-loop
+   for part in parts
+   for n upfrom 1
+   with last = (length parts)
+   for text = (plist-get part :text)
+   for media = (plist-get part :media)
+   if text do
+   (and (or (= n 1) (= n last)) (setq text (gptel--trim-prefixes text))) and
+   unless (string-empty-p text)
+   collect `(:type "text" :text ,text) into parts-array end
+   else if media
+   collect
+   `(:type "image_url"
+     :image_url (:url ,(concat "data:" (plist-get part :mime)
+                        ";base64," (gptel--base64-encode media))))
+   into parts-array end and
+   if (plist-get part :url)
+   collect
+   `(:type "image_url"
+     :image_url (:url ,(plist-get part :url)))
+   into parts-array
+   finally return (vconcat parts-array)))
+
+;; TODO: Does this need to be a generic function?
+(cl-defmethod gptel--wrap-user-prompt ((_backend gptel-openai) prompts
+                                       &optional inject-media)
+  "Wrap the last user prompt in PROMPTS with the context string.
+
+If INJECT-MEDIA is non-nil wrap it with base64-encoded media
+files in the context."
+  (if inject-media
+      ;; Wrap the first user prompt with included media files/contexts
+      (when-let ((media-list (gptel-context--collect-media)))
+        (cl-callf (lambda (current)
+                    (vconcat
+                     (gptel--openai-parse-multipart media-list)
+                     (cl-typecase current
+                       (string `((:type "text" :text ,current)))
+                       (vector current)
+                       (t current))))
+            (plist-get (cadr prompts) :content)))
+    ;; Wrap the last user prompt with included text contexts
+    (cl-callf (lambda (current)
+                (cl-etypecase current
+                  (string (gptel-context--wrap current))
+                  (vector (if-let ((wrapped (gptel-context--wrap nil)))
+                              (vconcat `((:type "text" :text ,wrapped))
+                                       current)
+                            current))))
+        (plist-get (car (last prompts)) :content))))
 
 ;;;###autoload
 (cl-defun gptel-make-openai
@@ -179,7 +263,26 @@ CURL-ARGS (optional) is a list of additional Curl arguments.
 
 HOST (optional) is the API host, typically \"api.openai.com\".
 
-MODELS is a list of available model names.
+MODELS is a list of available model names, as symbols.
+Additionally, you can specify supported LLM capabilities like
+vision or tool-use by appending a plist to the model with more
+information, in the form
+
+ (model-name . plist)
+
+For a list of currently recognized plist keys, see
+`gptel--openai-models'. An example of a model specification
+including both kinds of specs:
+
+:models
+\\='(gpt-3.5-turbo                         ;Simple specs
+  gpt-4-turbo
+  (gpt-4o-mini                          ;Full spec
+   :description
+   \"Affordable and intelligent small model for lightweight tasks\"
+   :capabilities (media tool json url)
+   :mime-types
+   (\"image/jpeg\" \"image/png\" \"image/gif\" \"image/webp\")))
 
 STREAM is a boolean to toggle streaming responses, defaults to
 false.
@@ -203,7 +306,7 @@ function that returns the key."
                   :host host
                   :header header
                   :key key
-                  :models models
+                  :models (gptel--process-models models)
                   :protocol protocol
                   :endpoint endpoint
                   :stream stream
@@ -266,7 +369,7 @@ Example:
                   :host host
                   :header header
                   :key key
-                  :models models
+                  :models (gptel--process-models models)
                   :protocol protocol
                   :endpoint endpoint
                   :stream stream

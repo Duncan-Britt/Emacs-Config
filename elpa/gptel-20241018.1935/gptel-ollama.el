@@ -28,6 +28,7 @@
 
 (declare-function json-read "json" ())
 (declare-function gptel-context--wrap "gptel-context")
+(declare-function gptel-context--collect-media "gptel-context")
 (defvar json-object-type)
 
 ;;; Ollama
@@ -75,13 +76,13 @@ Intended for internal use only.")
 (cl-defmethod gptel--request-data ((_backend gptel-ollama) prompts)
   "JSON encode PROMPTS for sending to ChatGPT."
   (let ((prompts-plist
-         `(:model ,gptel-model
+         `(:model ,(gptel--model-name gptel-model)
            :messages [,@prompts]
            :stream ,(or (and gptel-stream gptel-use-curl
                          (gptel-backend-stream gptel-backend))
                      :json-false)))
         ;; TODO num_ctx chosen according to #330, make customizable
-        (options-plist '(:num_ctx 8192)))
+        (options-plist (list :num_ctx 8192)))
     (when gptel-temperature
       (setq options-plist
             (plist-put options-plist :temperature
@@ -95,7 +96,9 @@ Intended for internal use only.")
     prompts-plist))
 
 (cl-defmethod gptel--parse-buffer ((_backend gptel-ollama) &optional max-entries)
-  (let ((prompts) (prop))
+  (let ((prompts) (prop)
+        (include-media (and gptel-track-media (or (gptel--model-capable-p 'media)
+                                                  (gptel--model-capable-p 'url)))))
     (if (or gptel-mode gptel-track-response)
         (while (and
                 (or (not max-entries) (>= max-entries 0))
@@ -104,16 +107,23 @@ Intended for internal use only.")
                             (when (get-char-property (max (point-min) (1- (point)))
                                                      'gptel)
                               t))))
-          (push (list :role (if (prop-match-value prop) "assistant" "user")
-                      :content
-                      (string-trim
-                       (buffer-substring-no-properties (prop-match-beginning prop)
-                                                       (prop-match-end prop))
-                       (format "[\t\r\n ]*\\(?:%s\\)?[\t\r\n ]*"
-                               (regexp-quote (gptel-prompt-prefix-string)))
-                       (format "[\t\r\n ]*\\(?:%s\\)?[\t\r\n ]*"
-                               (regexp-quote (gptel-response-prefix-string)))))
-                prompts)
+          (if (prop-match-value prop)   ;assistant role
+              (push (list :role "assistant"
+                          :content (buffer-substring-no-properties (prop-match-beginning prop)
+                                                                   (prop-match-end prop)))
+                    prompts)
+            (if include-media
+                (push (append '(:role "user")
+                             (gptel--ollama-parse-multipart
+                              (gptel--parse-media-links
+                               major-mode (prop-match-beginning prop) (prop-match-end prop))))
+                      prompts)
+              (push (list :role "user"
+                          :content
+                          (gptel--trim-prefixes
+                           (buffer-substring-no-properties (prop-match-beginning prop)
+                                                           (prop-match-end prop))))
+                    prompts)))
           (and max-entries (cl-decf max-entries)))
       (push (list :role "user"
                   :content
@@ -123,9 +133,47 @@ Intended for internal use only.")
                 :content gptel--system-message)
           prompts)))
 
-(cl-defmethod gptel--wrap-user-prompt ((_backend gptel-ollama) prompts)
-  "Wrap the last user prompt in PROMPTS with the context string."
-  (cl-callf gptel-context--wrap (plist-get (car (last prompts)) :content)))
+(defun gptel--ollama-parse-multipart (parts)
+  "Convert a multipart prompt PARTS to the Ollama API format.
+
+The input is an alist of the form
+ ((:text \"some text\")
+  (:media \"/path/to/media.png\" :mime \"image/png\")
+  (:text \"More text\")).
+
+The output is a vector of entries in a backend-appropriate
+format."
+  (cl-loop
+   for part in parts
+   for n upfrom 1
+   with last = (length parts)
+   for text = (plist-get part :text)
+   for media = (plist-get part :media)
+   if text do
+   (and (or (= n 1) (= n last)) (setq text (gptel--trim-prefixes text))) and
+   unless (string-empty-p text)
+   collect text into text-array end
+   else if media
+   collect (gptel--base64-encode media) into media-array end
+   finally return
+   `(,@(and text-array  (list :content (mapconcat #'identity text-array " ")))
+     ,@(and media-array (list :images  (vconcat media-array))))))
+
+(cl-defmethod gptel--wrap-user-prompt ((_backend gptel-ollama) prompts
+                                       &optional inject-media)
+  "Wrap the last user prompt in PROMPTS with the context string.
+
+If INJECT-MEDIA is non-nil wrap it with base64-encoded media files in the context."
+  (if inject-media
+      ;; Wrap the first user prompt with included media files/contexts
+      (when-let* ((media-list (gptel-context--collect-media))
+                  (media-processed (gptel--ollama-parse-multipart media-list)))
+        (cl-callf (lambda (images)
+                    (vconcat (plist-get media-processed :images)
+                             images))
+            (plist-get (cadr prompts) :images)))
+    ;; Wrap the last user prompt with included text contexts
+    (cl-callf gptel-context--wrap (plist-get (car (last prompts)) :content))))
 
 ;;;###autoload
 (cl-defun gptel-make-ollama
@@ -141,7 +189,26 @@ CURL-ARGS (optional) is a list of additional Curl arguments.
 
 HOST is where Ollama runs (with port), defaults to localhost:11434
 
-MODELS is a list of available model names.
+MODELS is a list of available model names, as symbols.
+Additionally, you can specify supported LLM capabilities like
+vision or tool-use by appending a plist to the model with more
+information, in the form
+
+ (model-name . plist)
+
+Currently recognized plist keys are :description, :capabilities
+and :mime-types.  An example of a model specification including
+both kinds of specs:
+
+:models
+\\='(mistral:latest                        ;Simple specs
+  openhermes:latest
+  (llava:13b                            ;Full spec
+   :description
+   \"Llava 1.6: Large Lanuage and Vision Assistant\"
+   :capabilities (media)
+   :mime-types (\"image/jpeg\" \"image/png\")))
+
 
 STREAM is a boolean to toggle streaming responses, defaults to
 false.
@@ -175,7 +242,7 @@ Example:
                   :host host
                   :header header
                   :key key
-                  :models models
+                  :models (gptel--process-models models)
                   :protocol protocol
                   :endpoint endpoint
                   :stream stream

@@ -223,8 +223,10 @@ This is used only for setting this variable via `gptel-menu'.")
   "Class used for gptel-backends.")
 
 (cl-defmethod transient-format-value ((obj gptel-provider-variable))
-  (propertize (concat (gptel-backend-name (oref obj value)) ":"
-                      (buffer-local-value (oref obj model) transient--original-buffer))
+  (propertize (concat
+               (gptel-backend-name (oref obj value)) ":"
+               (gptel--model-name
+                (buffer-local-value (oref obj model) transient--original-buffer)))
               'face 'transient-value))
 
 (cl-defmethod transient-infix-set ((obj gptel-provider-variable) value)
@@ -307,7 +309,9 @@ Also format its value in the Transient menu."
     (gptel--infix-temperature :if (lambda () gptel-expert-commands))
     (gptel--infix-use-context)
     (gptel--infix-track-response
-     :if (lambda () (and gptel-expert-commands (not gptel-mode))))]
+     :if (lambda () (and gptel-expert-commands (not gptel-mode))))
+    (gptel--infix-track-media
+     :if (lambda () (and gptel-mode (gptel--model-capable-p 'media))))]
    ["Prompt from"
     ("m" "Minibuffer instead" "m")
     ("y" "Kill-ring instead" "y")
@@ -541,8 +545,35 @@ responses."
             (cl-loop
              for (name . backend) in gptel--known-backends
              nconc (cl-loop for model in (gptel-backend-models backend)
-                            collect (list (concat name ":" model) backend model))
-             into models-alist finally return
+                            collect (list (concat name ":" (gptel--model-name model))
+                                          backend model))
+             into models-alist
+             with completion-extra-properties =
+             `(:annotation-function
+               ,(lambda (comp)
+		  (let* ((model (nth 2 (assoc comp models-alist)))
+			 (desc (get model :description))
+			 (caps (get model :capabilities))
+			 (context (get model :context-window))
+			 (input-cost (get model :input-cost))
+			 (output-cost (get model :output-cost))
+			 (cutoff (get model :cutoff-date)))
+		    (when (or desc caps context input-cost output-cost cutoff)
+		      (concat
+		       (propertize " " 'display `(space :align-to 40))
+		       (when desc (truncate-string-to-width desc 70 nil ? t t))
+		       " " (propertize " " 'display `(space :align-to 112))
+		       (when caps (truncate-string-to-width (prin1-to-string caps) 21 nil ? t t))
+		       " " (propertize " " 'display `(space :align-to 134))
+		       (when context (format "%5dk" context))
+		       " " (propertize " " 'display `(space :align-to 142))
+		       (when input-cost (format "$%5.2f in" input-cost))
+		       (if (and input-cost output-cost) "," " ")
+		       " " (propertize " " 'display `(space :align-to 153))
+		       (when output-cost (format "$%6.2f out" output-cost))
+		       " " (propertize " " 'display `(space :align-to 166))
+		       cutoff)))))
+             finally return
              (cdr (assoc (completing-read prompt models-alist nil t)
                          models-alist)))))
 
@@ -575,6 +606,24 @@ querying the LLM."
   :display-if-true "Yes"
   :display-if-false "No"
   :key "-d")
+
+(transient-define-infix gptel--infix-track-media ()
+  "Send media from \"standalone\" links in the prompt.
+
+When the active `gptel-model' supports it, gptel can send images
+or other media from links in the buffer to the LLM.  Only
+\"standalone\" links are considered: these are links on their own
+line with no surrounding text.
+
+What link types are sent depends on the mime-types the model
+supports.  See `gptel-track-media' for more information."
+  :description "Send media from links"
+  :class 'gptel--switches
+  :variable 'gptel-track-media
+  :set-value #'gptel--set-with-scope
+  :display-if-true "Yes"
+  :display-if-false "No"
+  :key "-I")
 
 ;; ** Infixes for adding and removing context
 

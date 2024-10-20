@@ -324,7 +324,7 @@ that you want loaded before Prelude.")
   :config
   (require 'spaceline-config)
   (spaceline-emacs-theme)
- 
+
   (defun my-spaceline-theme ()
     "My custom Spaceline theme."
     (setq-default mode-line-format
@@ -337,12 +337,12 @@ that you want loaded before Prelude.")
                     mode-line-remote
                     mode-line-frame-identification
                     mode-line-buffer-identification
-                    "   "                    
+                    "   "
                     "   "
                     ;; mode-line-position
                     (vc-mode vc-mode) ;; Remove this line to exclude Git branch
                     "  "
-                    ;; mode-line-modes                    
+                    ;; mode-line-modes
                     mode-line-misc-info
                     mode-line-end-spaces)))
 
@@ -464,6 +464,11 @@ that you want loaded before Prelude.")
   :ensure t
   :hook (org-mode . org-fragtog-mode))
 
+(use-package org-download
+  :ensure t
+  :custom
+  (org-download-image-attr-list '("#+attr_org: :width 600")))
+
 ;; (use-package gcal
 ;;   :after (org safe)
 ;;   :load-path "~/code/vendored-emacs-packages/gcal/"
@@ -517,7 +522,7 @@ that you want loaded before Prelude.")
           "\\*slime-repl sbcl\\*"
           help-mode
           compilation-mode))
-  (setq popper-group-function #'popper-group-by-projectile)  
+  (setq popper-group-function #'popper-group-by-projectile)
   (popper-mode +1)
   (popper-echo-mode +1) ; For echo area hints
 ;;   (defun my/popper-display-popup-at-side (buffer &optional alist)
@@ -531,11 +536,11 @@ that you want loaded before Prelude.")
 ;;              `((window-width . ,popper-window-height)
 ;;                (side . right)
 ;;                (slot . 1)))))
-  ;; :custom  
+  ;; :custom
   ;; (popper-display-function #'(lambda (buffer &optional alist)
   ;;                              (let ((window (my/popper-display-popup-at-side buffer alist)))
   ;;                                (select-window window))))
-  ) 
+  )
 
 (use-package ace-window
   :config
@@ -635,18 +640,6 @@ that you want loaded before Prelude.")
 (add-to-list 'load-path "~/.emacs.d/personal/common-lisp.el")
 (add-to-list 'load-path "~/.emacs.d/personal/lass.el")
 
-;; ==================
-;; COMMON LISP: SLIME
-;; ==================
-(setq inferior-lisp-program (executable-find "sbcl"))
-(load (expand-file-name "~/quicklisp/slime-helper.el"))
-;; replace "sbcl" with the path to your implementation
-;; (setq inferior-lisp-program "sbcl --dynamics-space-size 2048")
-(setq slime-lisp-implementations '((sbcl ("sbcl" "--dynamic-space-size" "4000"))
-                                   (ccl64 ("/usr/local/bin/ccl64"))))
-(setq slime-default-lisp 'sbcl)
-
-
 ;; Emacs Easy Draw
 ;; (add-to-list 'load-path (expand-file-name "~/.emacs.d/personal/el-easydraw/"))
 ;; (autoload 'edraw-mode "edraw-mode")
@@ -674,27 +667,20 @@ that you want loaded before Prelude.")
 (use-package safe
   :load-path "~/.safe/")
 
-;; ;; ORG-AI
-;; (use-package org-ai
-;;   :after safe
-;;   :ensure t
-;;   :commands (org-ai-mode org-ai-global-mode)
-;;   :init
-;;   (add-hook 'org-mode-hook #'org-ai-mode) ; enable org-ai in org-mode
-;;   (org-ai-global-mode) ; installs global keybindings on C-c M-a
-;;   :config
-;;   (setq org-ai-openai-api-token *api-token*)
-;;   (setq org-ai-default-chat-model "gpt-4o")  
-;;   )
-
 (use-package gptel
   :after safe
   :ensure t
-  :config  
+  :config
   (setq
-   gptel-model "claude-3-5-sonnet-20240620" ;  "claude-3-opus-20240229" also available
+   gptel-model 'claude-3-5-sonnet-20240620 ;  'claude-3-opus-20240229 also available
    gptel-backend (gptel-make-anthropic "Claude"
                    :stream t :key *api-token*))
+  ;; (setq
+  ;; gptel-model 'aya:latest
+  ;; gptel-backend (gptel-make-ollama "Ollama"   ;Any name of your choosing
+  ;;                 :host "localhost:11434"     ;Where it's running
+  ;;                 :stream t                   ;Stream responses
+  ;;                 :models '(aya:latest)))     ;List of models
   (setq gptel-default-mode 'org-mode))
 
 ;; Spell Check Dictionary
@@ -814,11 +800,6 @@ Display the number of replacements made."
   :ensure t
   :config
   (ready-player-mode +1))
-
-(use-package annotate
-  :ensure t
-  :config
-  (setq annotate-file "~/.emacs.d/annotations"))
 
 ;; function to make insert greek letters after typing their name.
 ;; also includes other symbols besides greek letters like infinity and setmemership (in).

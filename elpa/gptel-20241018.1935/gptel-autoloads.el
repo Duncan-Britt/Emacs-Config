@@ -70,7 +70,25 @@ CURL-ARGS (optional) is a list of additional Curl arguments.
 
 HOST (optional) is the API host, \"api.anthropic.com\" by default.
 
-MODELS is a list of available model names.
+MODELS is a list of available model names, as symbols.
+Additionally, you can specify supported LLM capabilities like
+vision or tool-use by appending a plist to the model with more
+information, in the form
+
+ (model-name . plist)
+
+For a list of currently recognized plist keys, see
+`gptel--anthropic-models'. An example of a model specification
+including both kinds of specs:
+
+:models
+\\='(claude-3-haiku-20240307               ;Simple specs
+  claude-3-opus-20240229
+  (claude-3-5-sonnet-20240620           ;Full spec
+   :description  \"Balance of intelligence and speed\"
+   :capabilities (media tool json)
+   :mime-types
+   (\"image/jpeg\" \"image/png\" \"image/gif\" \"image/webp\")))
 
 STREAM is a boolean to toggle streaming responses, defaults to
 false.
@@ -88,8 +106,9 @@ alist, like:
 KEY is a variable whose value is the API key, or function that
 returns the key.
 
-(fn NAME &key CURL-ARGS STREAM KEY (HEADER (lambda nil (when-let (key (gptel--get-api-key)) \\=`((\"x-api-key\" \\=\\, key) (\"anthropic-version\" . \"2023-06-01\"))))) (MODELS \\='(\"claude-3-5-sonnet-20240620\" \"claude-3-sonnet-20240229\" \"claude-3-haiku-20240307\" \"claude-3-opus-20240229\")) (HOST \"api.anthropic.com\") (PROTOCOL \"https\") (ENDPOINT \"/v1/messages\"))")
+(fn NAME &key CURL-ARGS STREAM KEY (HEADER (lambda nil (when-let (key (gptel--get-api-key)) \\=`((\"x-api-key\" \\=\\, key) (\"anthropic-version\" . \"2023-06-01\"))))) (MODELS gptel--anthropic-models) (HOST \"api.anthropic.com\") (PROTOCOL \"https\") (ENDPOINT \"/v1/messages\"))")
 (function-put 'gptel-make-anthropic 'lisp-indent-function 1)
+(register-definition-prefixes "gptel-anthropic" '("gptel--anthropic-"))
 
 
 ;;; Generated autoloads from gptel-context.el
@@ -97,12 +116,12 @@ returns the key.
  (autoload 'gptel-add "gptel-context" "Add/remove regions or buffers from gptel's context." t)
  (autoload 'gptel-add-file "gptel-context" "Add files to gptel's context." t)
 (autoload 'gptel-context--wrap "gptel-context" "\
-
+Wrap MESSAGE with context string.
 
 (fn MESSAGE)")
 (autoload 'gptel-context--collect "gptel-context" "\
 Get the list of all active context overlays.")
-(register-definition-prefixes "gptel-context" '("gptel-context-"))
+(register-definition-prefixes "gptel-context" '("gptel-"))
 
 
 ;;; Generated autoloads from gptel-curl.el
@@ -134,7 +153,27 @@ CURL-ARGS (optional) is a list of additional Curl arguments.
 HOST (optional) is the API host, defaults to
 \"generativelanguage.googleapis.com\".
 
-MODELS is a list of available model names.
+MODELS is a list of available model names, as symbols.
+Additionally, you can specify supported LLM capabilities like
+vision or tool-use by appending a plist to the model with more
+information, in the form
+
+ (model-name . plist)
+
+For a list of currently recognized plist keys, see
+`gptel--gemini-models'. An example of a model specification
+including both kinds of specs:
+
+:models
+\\='(gemini-pro                            ;Simple specs
+  gemini-1.5-flash
+  (gemini-1.5-pro-latest                ;Full spec
+   :description
+   \"Complex reasoning tasks, problem solving and data extraction\"
+   :capabilities (tool json)
+   :mime-types
+   (\"image/jpeg\" \"image/png\" \"image/webp\" \"image/heic\")))
+
 
 STREAM is a boolean to enable streaming responses, defaults to
 false.
@@ -152,8 +191,9 @@ alist, like:
 KEY (optional) is a variable whose value is the API key, or
 function that returns the key.
 
-(fn NAME &key CURL-ARGS HEADER KEY (STREAM nil) (HOST \"generativelanguage.googleapis.com\") (PROTOCOL \"https\") (MODELS \\='(\"gemini-pro\" \"gemini-1.5-flash\" \"gemini-1.5-pro-latest\")) (ENDPOINT \"/v1beta/models\"))")
+(fn NAME &key CURL-ARGS HEADER KEY (STREAM nil) (HOST \"generativelanguage.googleapis.com\") (PROTOCOL \"https\") (MODELS gptel--gemini-models) (ENDPOINT \"/v1beta/models\"))")
 (function-put 'gptel-make-gemini 'lisp-indent-function 1)
+(register-definition-prefixes "gptel-gemini" '("gptel--gemini-"))
 
 
 ;;; Generated autoloads from gptel-kagi.el
@@ -190,7 +230,7 @@ Example:
 
  (gptel-make-kagi \"Kagi\" :key my-kagi-key)
 
-(fn NAME &key CURL-ARGS STREAM KEY (HOST \"kagi.com\") (HEADER (lambda nil \\=`((\"Authorization\" \\=\\, (concat \"Bot \" (gptel--get-api-key)))))) (MODELS \\='(\"fastgpt\" \"summarize:cecil\" \"summarize:agnes\" \"summarize:daphne\" \"summarize:muriel\")) (PROTOCOL \"https\") (ENDPOINT \"/api/v0/\"))")
+(fn NAME &key CURL-ARGS STREAM KEY (HOST \"kagi.com\") (HEADER (lambda nil \\=`((\"Authorization\" \\=\\, (concat \"Bot \" (gptel--get-api-key)))))) (MODELS \\='(fastgpt summarize:cecil summarize:agnes summarize:daphne summarize:muriel)) (PROTOCOL \"https\") (ENDPOINT \"/api/v0/\"))")
 (function-put 'gptel-make-kagi 'lisp-indent-function 1)
 
 
@@ -205,7 +245,26 @@ CURL-ARGS (optional) is a list of additional Curl arguments.
 
 HOST is where Ollama runs (with port), defaults to localhost:11434
 
-MODELS is a list of available model names.
+MODELS is a list of available model names, as symbols.
+Additionally, you can specify supported LLM capabilities like
+vision or tool-use by appending a plist to the model with more
+information, in the form
+
+ (model-name . plist)
+
+Currently recognized plist keys are :description, :capabilities
+and :mime-types.  An example of a model specification including
+both kinds of specs:
+
+:models
+\\='(mistral:latest                        ;Simple specs
+  openhermes:latest
+  (llava:13b                            ;Full spec
+   :description
+   \"Llava 1.6: Large Lanuage and Vision Assistant\"
+   :capabilities (media)
+   :mime-types (\"image/jpeg\" \"image/png\")))
+
 
 STREAM is a boolean to toggle streaming responses, defaults to
 false.
@@ -235,7 +294,7 @@ Example:
 
 (fn NAME &key CURL-ARGS HEADER KEY MODELS STREAM (HOST \"localhost:11434\") (PROTOCOL \"http\") (ENDPOINT \"/api/chat\"))")
 (function-put 'gptel-make-ollama 'lisp-indent-function 1)
-(register-definition-prefixes "gptel-ollama" '("gptel--ollama-token-count"))
+(register-definition-prefixes "gptel-ollama" '("gptel--ollama-"))
 
 
 ;;; Generated autoloads from gptel-openai.el
@@ -249,7 +308,26 @@ CURL-ARGS (optional) is a list of additional Curl arguments.
 
 HOST (optional) is the API host, typically \"api.openai.com\".
 
-MODELS is a list of available model names.
+MODELS is a list of available model names, as symbols.
+Additionally, you can specify supported LLM capabilities like
+vision or tool-use by appending a plist to the model with more
+information, in the form
+
+ (model-name . plist)
+
+For a list of currently recognized plist keys, see
+`gptel--openai-models'. An example of a model specification
+including both kinds of specs:
+
+:models
+\\='(gpt-3.5-turbo                         ;Simple specs
+  gpt-4-turbo
+  (gpt-4o-mini                          ;Full spec
+   :description
+   \"Affordable and intelligent small model for lightweight tasks\"
+   :capabilities (media tool json url)
+   :mime-types
+   (\"image/jpeg\" \"image/png\" \"image/gif\" \"image/webp\")))
 
 STREAM is a boolean to toggle streaming responses, defaults to
 false.
@@ -385,7 +463,7 @@ returns the key.
 CONTEXT and SOURCES: if true (the default), use available context
 and provide sources used by the model to generate the response.
 
-(fn NAME &key CURL-ARGS STREAM KEY (HEADER (lambda nil (when-let (key (gptel--get-api-key)) \\=`((\"Authorization\" \\=\\, (concat \"Bearer \" key)))))) (HOST \"localhost:8001\") (PROTOCOL \"http\") (MODELS \\='(\"private-gpt\")) (ENDPOINT \"/v1/chat/completions\") (CONTEXT t) (SOURCES t))")
+(fn NAME &key CURL-ARGS STREAM KEY (HEADER (lambda nil (when-let (key (gptel--get-api-key)) \\=`((\"Authorization\" \\=\\, (concat \"Bearer \" key)))))) (HOST \"localhost:8001\") (PROTOCOL \"http\") (MODELS \\='(private-gpt)) (ENDPOINT \"/v1/chat/completions\") (CONTEXT t) (SOURCES t))")
 (function-put 'gptel-make-privategpt 'lisp-indent-function 1)
 (register-definition-prefixes "gptel-privategpt" '("gptel--privategpt-parse-sources"))
 

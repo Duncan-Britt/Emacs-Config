@@ -27,14 +27,24 @@
 (require 'org-element)
 (require 'outline)
 
-(declare-function org-element-begin "org-element")
-
 ;; Functions used for saving/restoring gptel state in Org buffers
 (defvar gptel--num-messages-to-send)
 (defvar org-entry-property-inherited-from)
 (defvar gptel-backend)
 (defvar gptel--known-backends)
+(defvar gptel--system-message)
+(defvar gptel-model)
+(defvar gptel-temperature)
+(defvar gptel-max-tokens)
+
+(defvar org-link-angle-re)
+(defvar org-link-bracket-re)
+(declare-function mailcap-file-name-to-mime-type "mailcap")
+(declare-function gptel--model-capable-p "gptel")
+(declare-function gptel--model-mime-capable-p "gptel")
+(declare-function gptel--model-name "gptel")
 (declare-function gptel--to-string "gptel")
+(declare-function gptel--to-number "gptel")
 (declare-function gptel--intern "gptel")
 (declare-function gptel--get-buffer-bounds "gptel")
 (declare-function gptel-backend-name "gptel")
@@ -74,7 +84,13 @@ of Org."
                   (throw :--first-match rtn)
                 (when rtn (push rtn acc))))
             (setq up (org-element-parent up)))
-          (nreverse acc))))))
+          (nreverse acc)))))
+  (if (fboundp 'org-element-begin)
+      (progn (declare-function org-element-begin "org-element")
+             (defalias 'gptel-org--element-begin 'org-element-begin))
+    (defun gptel-org--element-begin (node)
+      "Get `:begin' property of NODE."
+      (org-element-property :begin node))))
 
 
 ;;; User options
@@ -175,7 +191,7 @@ value of `gptel-org-branching-context', which see."
             (save-excursion
               (let* ((org-buf (current-buffer))
                      (start-bounds (gptel-org--element-lineage-map
-                                       (org-element-at-point) #'org-element-begin
+                                       (org-element-at-point) #'gptel-org--element-begin
                                      '(headline org-data) 'with-self))
                      (end-bounds
                       (cl-loop
@@ -199,7 +215,9 @@ value of `gptel-org-branching-context', which see."
                               gptel-model (buffer-local-value 'gptel-model org-buf)
                               gptel-mode (buffer-local-value 'gptel-mode org-buf)
                               gptel-track-response
-                              (buffer-local-value 'gptel-track-response org-buf))
+                              (buffer-local-value 'gptel-track-response org-buf)
+                              gptel-track-media
+                              (buffer-local-value 'gptel-track-media org-buf))
                   (cl-loop for start in start-bounds
                            for end   in end-bounds
                            do (insert-buffer-substring org-buf start end)
@@ -213,6 +231,69 @@ value of `gptel-org-branching-context', which see."
           (gptel--parse-buffer gptel-backend max-entries))
       ;; Create prompt the usual way
       (gptel--parse-buffer gptel-backend max-entries))))
+
+;; Handle media links in the buffer
+(cl-defmethod gptel--parse-media-links ((_mode (eql 'org-mode)) beg end)
+  "Parse text and actionable links between BEG and END.
+
+Return a list of the form
+ ((:text \"some text\")
+  (:media \"/path/to/media.png\" :mime \"image/png\")
+  (:text \"More text\"))
+for inclusion into the user prompt for the gptel request."
+  (require 'mailcap)                    ;FIXME Avoid this somehow
+  (let ((parts) (from-pt)
+        (link-regex (concat "\\(?:" org-link-bracket-re "\\|"
+                            org-link-angle-re "\\)")))
+    (save-excursion
+      (setq from-pt (goto-char beg))
+      (while (re-search-forward link-regex end t)
+        (when-let* ((link (org-element-context))
+                    ((gptel-org--link-standalone-p link))
+                    (raw-link (org-element-property :raw-link link))
+                    (path (org-element-property :path link))
+                    (type (org-element-property :type link))
+                    ;; FIXME This is not a good place to check for url capability!
+                    ((member type `("attachment" "file"
+                                    ,@(and (gptel--model-capable-p 'url)
+                                       '("http" "https" "ftp")))))
+                    (mime (mailcap-file-name-to-mime-type path))
+                    ((gptel--model-mime-capable-p mime)))
+          (cond
+           ((member type '("file" "attachment"))
+            (when (file-readable-p path)
+              ;; Collect text up to this image, and
+              ;; Collect this image
+              (when-let ((text (string-trim (buffer-substring-no-properties
+                                             from-pt (gptel-org--element-begin link)))))
+                (unless (string-empty-p text) (push (list :text text) parts)))
+              (push (list :media path :mime mime) parts)
+              (setq from-pt (point))))
+           ((member type '("http" "https" "ftp"))
+            ;; Collect text up to this image, and
+            ;; Collect this image url
+            (when-let ((text (string-trim (buffer-substring-no-properties
+                                             from-pt (gptel-org--element-begin link)))))
+              (unless (string-empty-p text) (push (list :text text) parts)))
+            (push (list :url raw-link :mime mime) parts)
+            (setq from-pt (point))))))
+      (unless (= from-pt end)
+        (push (list :text (buffer-substring-no-properties from-pt end)) parts)))
+    (nreverse parts)))
+
+(defun gptel-org--link-standalone-p (object)
+  "Check if link OBJECT is on a line by itself."
+  ;; Specify ancestor TYPES as list (#245)
+  (let ((par (org-element-lineage object '(paragraph))))
+    (and (= (gptel-org--element-begin object)
+            (save-excursion
+              (goto-char (org-element-property :contents-begin par))
+              (skip-chars-forward "\t ")
+              (point)))                 ;account for leading space
+                                        ;before object
+         (<= (- (org-element-property :contents-end par)
+                (org-element-property :end object))
+             1))))
 
 (defun gptel-org--send-with-props (send-fun &rest args)
   "Conditionally modify SEND-FUN's calling environment.
@@ -257,6 +338,7 @@ ARGS are the original function call arguments."
     (when backend
       (setq backend (alist-get backend gptel--known-backends
                                nil nil #'equal)))
+    (when model (setq model (gptel--intern model)))
     (when temperature
       (setq temperature (gptel--to-number temperature)))
     (when tokens (setq tokens (gptel--to-number tokens)))
@@ -301,7 +383,7 @@ settings when applicable.
 PT is the cursor position by default.  If MSG is
 non-nil (default), display a message afterwards."
   (interactive (list (point) t))
-  (org-entry-put pt "GPTEL_MODEL" gptel-model)
+  (org-entry-put pt "GPTEL_MODEL" (gptel--model-name gptel-model))
   (org-entry-put pt "GPTEL_BACKEND" (gptel-backend-name gptel-backend))
   (unless (equal (default-value 'gptel-temperature) gptel-temperature)
     (org-entry-put pt "GPTEL_TEMPERATURE"
